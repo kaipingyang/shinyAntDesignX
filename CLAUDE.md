@@ -48,7 +48,7 @@ Each widget has:
 
 `srcjs/bridge.ts` — **do not modify**. Handles all Shiny ↔ React messaging: `chunk / done / error / thinking / tool-call / tool-result / sessions / load-thread / clear`.
 
-`srcjs/state.ts` — `useShinyState()` hook. Manages threads, messages, streaming state, localStorage persistence, and server mode (sessions from R).
+`srcjs/state.ts` — `useShinyState()` hook. Manages threads, messages, streaming state, localStorage persistence, and server mode. Note: upstream uses `useXChat` + `useXConversations` from `@ant-design/x-sdk`; we hand-rolled equivalents for tighter Shiny integration.
 
 `srcjs/AntDesignX.tsx` — root component. Composes `Conversations + Bubble.List + Sender + ThoughtChain + Dropdown` (slash commands).
 
@@ -56,15 +56,27 @@ R server: `antDesignXServer(id, handler, ...)` — handler receives `on_chunk / 
 
 ## Known gotchas
 
-- antd v6 IIFE build requires `define: { "process.env.NODE_ENV": JSON.stringify("production") }` — omit it → `process is not defined`
+- antd v6 IIFE build requires `define: { "process.env.NODE_ENV": JSON.stringify("production") }` — omit → `process is not defined`
 - `Bubble.List` prop is `role` not `roles`
 - `typing` prop must include `effect` field: `{ effect: "typing", step: 2 }`
 - `avatar` prop takes antd `<Avatar>` component, not `{ icon, children }` plain object
 - XMarkdown `config` prop must be referentially stable (use `useMemo`)
+- XMarkdown streaming: **must set `hasNextChunk: false` on final chunk** — leaving it `true` freezes incomplete syntax placeholders
 - Vite IIFE format doesn't support multiple entries in one config — each widget built separately via `WIDGET_ENTRY` env var
 
 ## Reference docs
 
-- `.claude/docs/02-component-api-reference.md` — full Ant Design X component API
-- `.claude/docs/03-shiny-widget-design-report.md` — architecture decision record
-- `ant-design-x-src/packages/x/components/` — upstream TypeScript source (not in git)
+### Project docs (`.claude/docs/`)
+- `01-ant-design-x-ecosystem.md` — ecosystem overview (5 packages, RICH paradigm)
+- `02-component-api-reference.md` — full API for all 17 components + XMarkdown
+- `03-shiny-widget-design-report.md` — architecture decision record
+- `04-htmlwidgets-render-pattern.md` — correct R render function pattern (`shinyRenderWidget` + `bquote`)
+
+### Upstream source reference (`ant-design-x-src/packages/x/`, not in git)
+- `components/<name>/interface.ts` — TypeScript interfaces for each component
+- `docs/x-markdown/streaming.zh-CN.md` — XMarkdown streaming API (`hasNextChunk`, `tail`, `enableAnimation`)
+- `docs/x-markdown/chat-enhancement.zh-CN.md` — mapping Think/Sources into XMarkdown via `components` prop
+- `docs/playground/ultramodern.tsx` — canonical full chat UI (uses `useXChat` + `useXConversations` from x-sdk)
+- `docs/playground/copilot.tsx` — copilot sidebar layout reference
+- `docs/x-sdk/use-x-chat.zh-CN.md` — `useXChat` hook API (upstream data layer, not currently used here)
+- `docs/x-card/a2ui-v-0-9.zh-CN.md` — A2UI v0.9 protocol for dynamic AI-driven card UIs
