@@ -1,0 +1,5 @@
+dependencies:
+  - name: folder
+    version: 0.1.0
+    src: www
+    script: folder.js

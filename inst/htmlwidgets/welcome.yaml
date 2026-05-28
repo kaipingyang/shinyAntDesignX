@@ -1,0 +1,5 @@
+dependencies:
+  - name: welcome
+    version: 0.1.0
+    src: www
+    script: welcome.js

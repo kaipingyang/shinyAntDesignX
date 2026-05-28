@@ -4,7 +4,11 @@ const { execSync } = require("child_process");
 
 const NODE = "/home/kaiping.yang/.nvm/versions/node/v24.15.0/bin/node";
 const VITE = "./node_modules/.bin/vite";
-const widgets = ["antDesignX", "xmarkdown", "codeHighlighter", "mermaid", "thoughtChain"];
+const widgets = [
+  "antDesignX", "xmarkdown", "codeHighlighter", "mermaid", "thoughtChain",
+  "sender", "think", "welcome", "prompts", "bubbleList",
+  "actions", "sources", "fileCard", "folder", "conversations",
+];
 
 for (const widget of widgets) {
   console.log(`\n=== Building ${widget} ===`);

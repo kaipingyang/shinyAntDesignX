@@ -10,6 +10,16 @@ const entryMap: Record<string, string> = {
   codeHighlighter: "srcjs/widgets/codeHighlighter/index.tsx",
   mermaid:         "srcjs/widgets/mermaid/index.tsx",
   thoughtChain:    "srcjs/widgets/thoughtChain/index.tsx",
+  sender:          "srcjs/widgets/sender/index.tsx",
+  think:           "srcjs/widgets/think/index.tsx",
+  welcome:         "srcjs/widgets/welcome/index.tsx",
+  prompts:         "srcjs/widgets/prompts/index.tsx",
+  bubbleList:      "srcjs/widgets/bubbleList/index.tsx",
+  actions:         "srcjs/widgets/actions/index.tsx",
+  sources:         "srcjs/widgets/sources/index.tsx",
+  fileCard:        "srcjs/widgets/fileCard/index.tsx",
+  folder:          "srcjs/widgets/folder/index.tsx",
+  conversations:   "srcjs/widgets/conversations/index.tsx",
 };
 
 const entryFile = entryMap[entry];

@@ -1,0 +1,6 @@
+dependencies:
+  - name: bubbleList
+    version: 0.1.0
+    src: www
+    script: bubbleList.js
+    stylesheet: bubbleList.css

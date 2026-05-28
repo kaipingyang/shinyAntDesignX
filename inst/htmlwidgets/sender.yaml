@@ -1,0 +1,5 @@
+dependencies:
+  - name: sender
+    version: 0.1.0
+    src: www
+    script: sender.js

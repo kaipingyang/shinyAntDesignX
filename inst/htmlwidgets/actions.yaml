@@ -1,0 +1,5 @@
+dependencies:
+  - name: actions
+    version: 0.1.0
+    src: www
+    script: actions.js

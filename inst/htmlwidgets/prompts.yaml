@@ -1,0 +1,5 @@
+dependencies:
+  - name: prompts
+    version: 0.1.0
+    src: www
+    script: prompts.js

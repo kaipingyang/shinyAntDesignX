@@ -1,0 +1,5 @@
+dependencies:
+  - name: conversations
+    version: 0.1.0
+    src: www
+    script: conversations.js
