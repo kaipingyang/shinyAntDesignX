@@ -1,7 +1,7 @@
 #' XMarkdown Output Widget
 #'
-#' Renders Markdown content using Ant Design X's high-performance XMarkdown renderer.
-#' Supports streaming (for AI chat responses) and standard Markdown.
+#' Renders Markdown content using Ant Design X's XMarkdown renderer.
+#' Supports streaming for AI chat responses.
 #'
 #' @param outputId Output variable to read from.
 #' @param width,height CSS width and height.
@@ -23,15 +23,16 @@ shinyXMarkdownOutput <- function(outputId, width = "100%", height = "auto", ...)
 #' @param expr An expression returning a list with:
 #'   * `content` — Markdown string.
 #'   * `streaming` — logical, `TRUE` while content is still streaming in.
-#'   * `openLinksInNewTab` — logical, open links in new tab (default `FALSE`).
+#'   * `openLinksInNewTab` — logical (default `FALSE`).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
 renderShinyXMarkdown <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
-  htmlwidgets::createRenderFunction(
-    func,
-    function(x, session, name, ...) x,
-    shinyXMarkdownOutput,
-    NULL
+  htmlwidgets::shinyRenderWidget(
+    expr           = bquote(htmlwidgets::createWidget(
+                       name = "xmarkdown", x = .(func)(), package = "shinyAntDesignX")),
+    outputFunction = shinyXMarkdownOutput,
+    env            = baseenv(),
+    quoted         = TRUE
   )
 }

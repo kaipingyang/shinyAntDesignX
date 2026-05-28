@@ -22,15 +22,16 @@ shinyCodeHighlighterOutput <- function(outputId, width = "100%", height = "auto"
 #' @param expr An expression returning a list with:
 #'   * `code` — character string of code to display.
 #'   * `lang` — language identifier (e.g. `"r"`, `"python"`, `"sql"`).
-#'   * `showHeader` — logical, show the language header bar (default `TRUE`).
+#'   * `showHeader` — logical (default `TRUE`).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
 renderShinyCodeHighlighter <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
-  htmlwidgets::createRenderFunction(
-    func,
-    function(x, session, name, ...) x,
-    shinyCodeHighlighterOutput,
-    NULL
+  htmlwidgets::shinyRenderWidget(
+    expr           = bquote(htmlwidgets::createWidget(
+                       name = "codeHighlighter", x = .(func)(), package = "shinyAntDesignX")),
+    outputFunction = shinyCodeHighlighterOutput,
+    env            = baseenv(),
+    quoted         = TRUE
   )
 }

@@ -1,7 +1,6 @@
 #' Mermaid Diagram Output Widget
 #'
 #' Renders Mermaid diagrams using Ant Design X's Mermaid component.
-#' Supports zoom, download, and copy actions.
 #'
 #' @param outputId Output variable to read from.
 #' @param width,height CSS width and height.
@@ -29,10 +28,11 @@ shinyMermaidOutput <- function(outputId, width = "100%", height = "400px", ...) 
 #' @export
 renderShinyMermaid <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
-  htmlwidgets::createRenderFunction(
-    func,
-    function(x, session, name, ...) x,
-    shinyMermaidOutput,
-    NULL
+  htmlwidgets::shinyRenderWidget(
+    expr           = bquote(htmlwidgets::createWidget(
+                       name = "mermaid", x = .(func)(), package = "shinyAntDesignX")),
+    outputFunction = shinyMermaidOutput,
+    env            = baseenv(),
+    quoted         = TRUE
   )
 }
