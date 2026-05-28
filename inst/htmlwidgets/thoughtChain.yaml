@@ -1,0 +1,5 @@
+dependencies:
+  - name: thoughtChain
+    version: 0.1.0
+    src: www
+    script: thoughtChain.js

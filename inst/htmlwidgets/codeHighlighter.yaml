@@ -1,0 +1,5 @@
+dependencies:
+  - name: codeHighlighter
+    version: 0.1.0
+    src: www
+    script: codeHighlighter.js

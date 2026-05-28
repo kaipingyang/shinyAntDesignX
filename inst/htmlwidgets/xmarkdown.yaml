@@ -1,0 +1,6 @@
+dependencies:
+  - name: xmarkdown
+    version: 0.1.0
+    src: www
+    script: xmarkdown.js
+    stylesheet: xmarkdown.css

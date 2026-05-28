@@ -1,0 +1,8 @@
+node_modules/
+srcjs/
+package.json
+package-lock.json
+vite.config.ts
+tsconfig.json
+examples/
+PLAN.md

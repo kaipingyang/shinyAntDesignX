@@ -1,0 +1,24 @@
+# R package
+*.Rcheck/
+.Rhistory
+.RData
+.Rproj.user/
+*.tar.gz
+
+# Node
+node_modules/
+package-lock.json
+
+# Build artifacts — keep inst/www/*.js (built output for R package)
+# but ignore source maps
+inst/www/*.map
+
+# Reference source (large, not needed in package repo)
+ant-design-x-src/
+
+# Claude internal
+.claude/
+
+# Misc
+.DS_Store
+*.log

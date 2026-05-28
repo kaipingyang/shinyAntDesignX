@@ -1,0 +1,28 @@
+{
+  "name": "shinyantdesignx",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "node build-all.js",
+    "build:antDesignX":      "WIDGET_ENTRY=antDesignX      /home/kaiping.yang/.nvm/versions/node/v24.15.0/bin/node ./node_modules/.bin/vite build",
+    "build:xmarkdown":       "WIDGET_ENTRY=xmarkdown       /home/kaiping.yang/.nvm/versions/node/v24.15.0/bin/node ./node_modules/.bin/vite build",
+    "build:codeHighlighter": "WIDGET_ENTRY=codeHighlighter /home/kaiping.yang/.nvm/versions/node/v24.15.0/bin/node ./node_modules/.bin/vite build",
+    "build:mermaid":         "WIDGET_ENTRY=mermaid         /home/kaiping.yang/.nvm/versions/node/v24.15.0/bin/node ./node_modules/.bin/vite build",
+    "build:thoughtChain":    "WIDGET_ENTRY=thoughtChain    /home/kaiping.yang/.nvm/versions/node/v24.15.0/bin/node ./node_modules/.bin/vite build"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5",
+    "@ant-design/x": "latest",
+    "@ant-design/x-markdown": "^2.7.0",
+    "antd": "^6",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@vitejs/plugin-react": "^4",
+    "typescript": "latest",
+    "vite": "^6"
+  }
+}
