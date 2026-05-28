@@ -3,3 +3,4 @@ dependencies:
     version: 0.1.0
     src: www
     script: antDesignX.js
+    stylesheet: antDesignX.css

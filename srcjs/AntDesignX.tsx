@@ -1,7 +1,8 @@
 import React, { useState, useRef, useCallback, useMemo } from "react";
 import { theme as antdTheme, Avatar, ConfigProvider, Dropdown } from "antd";
-import { Bubble, Conversations, Sender, ThoughtChain, Welcome, Prompts } from "@ant-design/x";
+import { Bubble, Conversations, Sender, ThoughtChain, Think, Welcome, Prompts } from "@ant-design/x";
 import type { BubbleProps } from "@ant-design/x";
+import XMarkdown from "@ant-design/x-markdown";
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -16,7 +17,6 @@ import {
   ExperimentOutlined,
   ToolOutlined,
   BulbOutlined,
-  WarningOutlined,
   SafetyOutlined,
 } from "@ant-design/icons";
 import { useShinyState } from "./state";
@@ -165,30 +165,6 @@ function buildThoughtChainItems(
   });
 }
 
-// ── Thinking section ─────────────────────────────────────────────────────────
-
-function ThinkingSection({ text, done }: { text: string; done: boolean }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div style={{ border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "13px", overflow: "hidden", marginBottom: "8px", background: "hsl(0,0%,98%)" }}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        style={{ width: "100%", display: "flex", alignItems: "center", gap: "7px", padding: "7px 10px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
-      >
-        <BulbOutlined style={{ color: done ? "#9ca3af" : "#d97706", flexShrink: 0 }} />
-        <span style={{ fontWeight: 500, flex: 1 }}>{done ? "Thought" : "Thinking…"}</span>
-        {!done && <span style={{ fontSize: "11px", color: "#d97706" }}>in progress</span>}
-        <span style={{ fontSize: "12px", color: "#9ca3af" }}>{open ? "▾" : "▸"}</span>
-      </button>
-      {open && text && (
-        <div style={{ borderTop: "1px solid #e5e7eb", padding: "8px 10px", fontSize: "12px", color: "#6b7280", fontStyle: "italic", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: "300px", overflowY: "auto", lineHeight: 1.5 }}>
-          {text}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── AssistantContent: ThoughtChain + reasoning + text ────────────────────────
 
 function AssistantContent({
@@ -206,7 +182,14 @@ function AssistantContent({
   return (
     <div>
       {msg.reasoningContent && (
-        <ThinkingSection text={msg.reasoningContent} done={!msg.isStreaming} />
+        <Think
+          loading={msg.isStreaming}
+          blink={msg.isStreaming}
+          defaultExpanded={false}
+          style={{ marginBottom: 8 }}
+        >
+          {msg.reasoningContent}
+        </Think>
       )}
       {msg.toolCalls.length > 0 && (
         <ThoughtChain
@@ -215,9 +198,10 @@ function AssistantContent({
         />
       )}
       {msg.textContent && (
-        <div style={{ fontSize: "14px", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-          {msg.textContent}
-        </div>
+        <XMarkdown
+          content={msg.textContent}
+          streaming={msg.isStreaming ? { hasNextChunk: true, enableAnimation: true, tail: true } : undefined}
+        />
       )}
       {msg.isStreaming && !msg.textContent && msg.toolCalls.length === 0 && !msg.reasoningContent && (
         <span style={{ color: "#9ca3af", fontSize: "13px" }}>Thinking…</span>
