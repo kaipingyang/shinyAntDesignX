@@ -181,6 +181,10 @@ server <- function(input, output, session) {
   output$prompts_val  <- renderPrint(input$prompts1)
   output$actions_val  <- renderPrint(input$actions1)
   output$conv_val     <- renderPrint(input$conv1)
+
+  observeEvent(input$conv1_new, {
+    showNotification("New chat created", type = "message")
+  })
 }
 
 shinyApp(ui, server)
