@@ -8,6 +8,7 @@ const widgets = [
   "antDesignX", "xmarkdown", "codeHighlighter", "mermaid", "thoughtChain",
   "sender", "think", "welcome", "prompts", "bubbleList",
   "actions", "sources", "fileCard", "folder", "conversations",
+  "attachments", "suggestion", "notification", "xCard",
 ];
 
 for (const widget of widgets) {

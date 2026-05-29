@@ -20,6 +20,10 @@ const entryMap: Record<string, string> = {
   fileCard:        "srcjs/widgets/fileCard/index.tsx",
   folder:          "srcjs/widgets/folder/index.tsx",
   conversations:   "srcjs/widgets/conversations/index.tsx",
+  attachments:     "srcjs/widgets/attachments/index.tsx",
+  suggestion:      "srcjs/widgets/suggestion/index.tsx",
+  notification:    "srcjs/widgets/notification/index.tsx",
+  xCard:           "srcjs/widgets/xCard/index.tsx",
 };
 
 const entryFile = entryMap[entry];

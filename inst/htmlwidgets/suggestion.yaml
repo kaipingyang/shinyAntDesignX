@@ -1,0 +1,5 @@
+dependencies:
+  - name: suggestion
+    version: 0.1.0
+    src: www
+    script: suggestion.js
