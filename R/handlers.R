@@ -81,7 +81,7 @@ make_ellmer_handler <- function(chat,
       )
       if (needs_approval) {
         decision <- coro::await(current$wait_for_approval(request@id))
-        approved <- isTRUE(if (is.list(decision)) decision$approved else decision)
+        approved <- isTRUE(decision$approved)
         if (!approved) ellmer::tool_reject("User denied the tool call.")
       }
     }))
@@ -390,8 +390,8 @@ make_claude_handler <- function(options          = NULL,
             tryCatch(client$deny_tool(msg$request_id, "Interrupted"), error = function(e) NULL)
             tryCatch(client$interrupt(), error = function(e) NULL)
             on_tool_result(msg$request_id, "Interrupted", is_error = TRUE)
-          } else if (isTRUE(if (is.list(decision)) decision$approved else decision)) {
-            sidx <- if (is.list(decision)) decision$suggestionIdx else NULL
+          } else if (isTRUE(decision$approved)) {
+            sidx <- decision$suggestionIdx
             if (!is.null(sidx) && is.numeric(sidx)) {
               sug <- msg$suggestions[[sidx + 1L]]
               if (!is.null(sug)) {
@@ -420,7 +420,7 @@ make_claude_handler <- function(options          = NULL,
             } else { client$approve_tool(msg$request_id) }
             pending_tool_ids <- c(pending_tool_ids, msg$request_id)
           } else {
-            deny_msg <- (if (is.list(decision)) decision$customMessage else NULL) %||% "Denied by user"
+            deny_msg <- decision$customMessage %||% "Denied by user"
             client$deny_tool(msg$request_id, deny_msg)
             on_tool_result(msg$request_id, deny_msg, is_error = TRUE)
           }

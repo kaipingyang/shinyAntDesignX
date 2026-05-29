@@ -138,7 +138,7 @@ antDesignXServer <- function(id, handler,
     resolver <- get0(tid, envir = approval_resolvers)
     if (!is.null(resolver)) {
       rm(list = tid, envir = approval_resolvers)
-      resolver(isTRUE(msg$approved))
+      resolver(msg)  # pass full msg so handler can read $approved, $suggestionIdx etc.
     }
   }, ignoreNULL = TRUE, ignoreInit = TRUE)
 
