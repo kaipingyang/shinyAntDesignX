@@ -268,16 +268,22 @@ server <- function(input, output, session) {
   })
 
   # ── Notification (triggered by button) ───────────────────────────────────
-  notif_trigger <- reactiveVal(0L)
-  observeEvent(input$fire_notif, { notif_trigger(notif_trigger() + 1L) })
+  # Use shiny notification (not browser Notification) as fallback
+  # Browser Notification requires HTTPS + permission grant in user gesture context
+  observeEvent(input$fire_notif, {
+    showNotification(
+      paste0("通知已触发 (次数: ", input$fire_notif, ")"),
+      type = "message",
+      duration = 3
+    )
+  })
 
   output$notif1 <- renderShinyNotification({
-    notif_trigger()  # depend on trigger
-    if (notif_trigger() == 0L) return(list(title = "__init__", requestPermission = TRUE))
+    req(input$fire_notif > 0)
     list(
       inputId           = "notif1",
       title             = "shinyAntDesignX 通知",
-      body              = paste0("触发次数：", notif_trigger()),
+      body              = paste0("触发次数：", input$fire_notif),
       duration          = 5000,
       requestPermission = TRUE
     )

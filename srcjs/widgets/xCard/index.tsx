@@ -9,6 +9,19 @@ import { Button, Input, Select, Tag } from "antd";
 declare const HTMLWidgets: any;
 declare const Shiny: any;
 
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
+  constructor(props: { children: React.ReactNode }) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e: Error) { return { error: e }; }
+  render() {
+    if (this.state.error) {
+      return <div style={{ color: "red", padding: 8, fontSize: 12, fontFamily: "monospace" }}>
+        <strong>XCard Error:</strong> {String(this.state.error)}
+      </div>;
+    }
+    return this.props.children;
+  }
+}
+
 // Built-in default catalog with basic components
 const DEFAULT_CATALOG: Catalog = {
   catalogId: "shiny-default",
@@ -63,11 +76,15 @@ const DefaultComponents: Record<string, React.ComponentType<any>> = {
     };
     return <p style={styleMap[variant ?? "body"] ?? styleMap.body}>{content}</p>;
   },
-  Button: ({ label, variant = "default", disabled, action, _onAction }: any) => (
+  Button: ({ label, variant = "default", disabled, action, onAction }: any) => (
     <Button
       type={variant === "primary" ? "primary" : variant as any}
       disabled={disabled}
-      onClick={() => action && _onAction?.(action)}
+      onClick={() => {
+        if (action?.event && onAction) {
+          onAction(action.event.name, action.event.context ?? {});
+        }
+      }}
       style={{ margin: "4px 2px" }}
     >
       {label}
@@ -79,14 +96,18 @@ const DefaultComponents: Record<string, React.ComponentType<any>> = {
       <Input placeholder={placeholder} defaultValue={defaultValue} />
     </div>
   ),
-  Select: ({ label, options = [], defaultValue, action, _onAction }: any) => (
+  Select: ({ label, options = [], defaultValue, action, onAction }: any) => (
     <div style={{ marginBottom: 8 }}>
       {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
       <Select
         defaultValue={defaultValue}
         options={(options as string[]).map((o) => ({ value: o, label: o }))}
         style={{ width: "100%" }}
-        onChange={(v) => action && _onAction?.({ ...action, context: { value: v } })}
+        onChange={(v) => {
+          if (action?.event && onAction) {
+            onAction(action.event.name, { ...action.event.context, value: v });
+          }
+        }}
       />
     </div>
   ),
@@ -121,15 +142,17 @@ function XCardWidget({ inputId, surfaceId, commands, catalog }: XCardWidgetProps
   }, [inputId]);
 
   return (
-    <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm }}>
-      <XCard.Box
-        commands={commands}
-        onAction={handleAction}
-        components={DefaultComponents}
-      >
-        <XCard.Card id={surfaceId} />
-      </XCard.Box>
-    </ConfigProvider>
+    <ErrorBoundary>
+      <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm }}>
+        <XCard.Box
+          commands={commands}
+          onAction={handleAction}
+          components={DefaultComponents}
+        >
+          <XCard.Card id={surfaceId} />
+        </XCard.Box>
+      </ConfigProvider>
+    </ErrorBoundary>
   );
 }
 
