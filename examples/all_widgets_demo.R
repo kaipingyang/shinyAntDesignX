@@ -125,11 +125,17 @@ server <- function(input, output, session) {
     )
   })
 
+  # Encode local PNG as data URL for FileCard image preview
+  logo_src <- paste0(
+    "data:image/png;base64,",
+    base64enc::base64encode(file.path(here::here(), "examples/antdesignx-logo.png"))
+  )
+
   output$fc1 <- renderShinyFileCard({
     list(
       items = list(
         list(name = "sales_report.pdf", byte = 2048000, type = "file"),
-        list(name = "dashboard.png", byte = 512000, type = "image"),
+        list(name = "dashboard.png", byte = 512000, type = "image", src = logo_src),
         list(name = "data.csv", byte = 128000, type = "file")
       )
     )
