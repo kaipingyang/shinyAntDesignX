@@ -3,6 +3,7 @@ import { theme as antdTheme, Avatar, ConfigProvider, Dropdown } from "antd";
 import { Bubble, Conversations, Sender, ThoughtChain, Think, Welcome, Prompts } from "@ant-design/x";
 import type { BubbleProps } from "@ant-design/x";
 import XMarkdown from "@ant-design/x-markdown";
+import "@ant-design/x-markdown/themes/light.css";
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,

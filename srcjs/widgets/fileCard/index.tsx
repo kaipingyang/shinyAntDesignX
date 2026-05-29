@@ -21,14 +21,26 @@ interface FileCardWidgetProps {
   size?: "small" | "default";
 }
 
-// When type is image/audio/video but no src provided, fall back to file icon
+const IMAGE_EXT = ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "ico"];
+const AUDIO_EXT = ["mp3", "wav", "ogg", "flac", "aac", "m4a"];
+const VIDEO_EXT = ["mp4", "avi", "mov", "mkv", "webm", "flv"];
+
+function guessMediaType(name: string): "image" | "audio" | "video" | null {
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  if (IMAGE_EXT.includes(ext)) return "image";
+  if (AUDIO_EXT.includes(ext)) return "audio";
+  if (VIDEO_EXT.includes(ext)) return "video";
+  return null;
+}
+
+// When type is image/audio/video but no src provided, fall back to file icon preset
 function resolveType(item: FileCardItem): { type?: string; icon?: string } {
   if (item.src) return { type: item.type };
-  // No src: use icon preset instead of broken preview
+  const mediaType = item.type as string || guessMediaType(item.name) || "";
   const iconMap: Record<string, string> = {
     image: "image", audio: "audio", video: "video",
   };
-  if (item.type && iconMap[item.type]) return { type: "file", icon: iconMap[item.type] };
+  if (iconMap[mediaType]) return { type: "file", icon: iconMap[mediaType] };
   return { type: item.type };
 }
 

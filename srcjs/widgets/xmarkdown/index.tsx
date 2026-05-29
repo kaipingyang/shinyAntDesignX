@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { XMarkdown } from "@ant-design/x-markdown";
+import "@ant-design/x-markdown/themes/light.css";
 import { ConfigProvider, theme as antdTheme } from "antd";
 
 // @ts-ignore

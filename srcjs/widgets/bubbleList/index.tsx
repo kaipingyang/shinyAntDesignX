@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { Bubble } from "@ant-design/x";
 import { Avatar, ConfigProvider, theme as antdTheme } from "antd";
 import XMarkdown from "@ant-design/x-markdown";
+import "@ant-design/x-markdown/themes/light.css";
 
 // @ts-ignore
 declare const HTMLWidgets: any;
