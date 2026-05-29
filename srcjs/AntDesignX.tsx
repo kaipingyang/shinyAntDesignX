@@ -201,7 +201,12 @@ function AssistantContent({
       {msg.textContent && (
         <XMarkdown
           content={msg.textContent}
-          streaming={msg.isStreaming ? { hasNextChunk: true, enableAnimation: true, tail: true } : undefined}
+          streaming={msg.isStreaming ? {
+            hasNextChunk: true,
+            enableAnimation: true,
+            // Show tail cursor only when there are no pending tool calls
+            tail: msg.toolCalls.every(tc => tc.status !== "loading"),
+          } : undefined}
         />
       )}
       {msg.isStreaming && !msg.textContent && msg.toolCalls.length === 0 && !msg.reasoningContent && (
