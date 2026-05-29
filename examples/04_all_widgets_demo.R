@@ -19,10 +19,29 @@ ui <- page_fluid(
   hr(), h3("Folder"), shinyFolderOutput("folder1", height = "400px"),
   hr(), h3("Conversations (点击触发 input$conv1)"), shinyConversationsOutput("conv1", height = "300px"),
   hr(), h3("Sender (发送触发 input$sender1)"), shinySenderOutput("sender1", height = "auto"),
-  hr(), h4("Sender 输入值:"), verbatimTextOutput("sender_val"),
-  h4("Prompts 点击:"), verbatimTextOutput("prompts_val"),
-  h4("Actions 点击:"), verbatimTextOutput("actions_val"),
-  h4("Conversations 选中:"), verbatimTextOutput("conv_val")
+
+  # ── New widgets ───────────────────────────────────────────────────────────
+  hr(), h3("Attachments (上传后触发 input$att1)"),
+  shinyAttachmentsOutput("att1", height = "200px"),
+
+  hr(), h3("Suggestion (输入 / 触发补全，选中触发 input$sug1)"),
+  shinySuggestionOutput("sug1", height = "auto"),
+
+  hr(), h3("XCard (点击按钮触发 input$card1)"),
+  shinyXCardOutput("card1", height = "auto"),
+
+  hr(), h3("Notification (点击按钮触发浏览器通知)"),
+  actionButton("fire_notif", "发送浏览器通知", class = "btn-primary"),
+  shinyNotificationOutput("notif1"),
+
+  hr(),
+  h4("Sender 输入值:"),    verbatimTextOutput("sender_val"),
+  h4("Prompts 点击:"),     verbatimTextOutput("prompts_val"),
+  h4("Actions 点击:"),     verbatimTextOutput("actions_val"),
+  h4("Conversations 选中:"), verbatimTextOutput("conv_val"),
+  h4("Attachments 文件:"), verbatimTextOutput("att_val"),
+  h4("Suggestion 选中:"),  verbatimTextOutput("sug_val"),
+  h4("XCard Action:"),     verbatimTextOutput("card_val")
 )
 
 server <- function(input, output, session) {
@@ -187,9 +206,81 @@ server <- function(input, output, session) {
   output$prompts_val  <- renderPrint(input$prompts1)
   output$actions_val  <- renderPrint(input$actions1)
   output$conv_val     <- renderPrint(input$conv1)
+  output$att_val      <- renderPrint(input$att1)
+  output$sug_val      <- renderPrint(input$sug1)
+  output$card_val     <- renderPrint(input$card1)
 
   observeEvent(input$conv1_new, {
     showNotification("New chat created", type = "message")
+  })
+
+  # ── Attachments ───────────────────────────────────────────────────────────
+  output$att1 <- renderShinyAttachments({
+    list(
+      inputId             = "att1",
+      maxCount            = 3,
+      multiple            = TRUE,
+      accept              = ".png,.jpg,.jpeg,.pdf,.csv",
+      placeholderTitle    = "上传文件",
+      placeholderDescription = "点击或拖拽文件到此区域"
+    )
+  })
+
+  # ── Suggestion ────────────────────────────────────────────────────────────
+  output$sug1 <- renderShinySuggestion({
+    list(
+      inputId = "sug1",
+      placeholder = "输入 / 触发命令补全",
+      items = list(
+        list(value = "summarize",  label = "/summarize",  description = "总结当前内容"),
+        list(value = "translate",  label = "/translate",  description = "翻译为中文"),
+        list(value = "explain",    label = "/explain",    description = "详细解释"),
+        list(value = "code",       label = "/code",       description = "生成代码")
+      )
+    )
+  })
+
+  # ── XCard ─────────────────────────────────────────────────────────────────
+  output$card1 <- renderShinyXCard({
+    list(
+      inputId   = "card1",
+      surfaceId = "booking-card",
+      commands  = list(
+        xcard_create_surface("booking-card"),
+        xcard_update_components("booking-card", list(
+          list(id = "title",    component = "Text",   text = "预约服务", variant = "h2"),
+          list(id = "name-label", component = "Text", text = "您的姓名", variant = "body"),
+          list(id = "name",     component = "Input",  placeholder = "输入姓名"),
+          list(id = "type-label", component = "Text", text = "服务类型", variant = "body"),
+          list(id = "type",     component = "Select",
+               options = list("基础咨询", "深度分析", "定制开发"),
+               defaultValue = "基础咨询"),
+          list(id = "submit",   component = "Button", label = "确认预约", variant = "primary",
+               child = NULL,
+               action = list(event = list(
+                 name    = "booking:confirm",
+                 context = list(service_type = list(path = "/form/type"))
+               )))
+        )),
+        xcard_update_data("booking-card", "/form/type", "基础咨询")
+      )
+    )
+  })
+
+  # ── Notification (triggered by button) ───────────────────────────────────
+  notif_trigger <- reactiveVal(0L)
+  observeEvent(input$fire_notif, { notif_trigger(notif_trigger() + 1L) })
+
+  output$notif1 <- renderShinyNotification({
+    notif_trigger()  # depend on trigger
+    if (notif_trigger() == 0L) return(list(title = "__init__", requestPermission = TRUE))
+    list(
+      inputId           = "notif1",
+      title             = "shinyAntDesignX 通知",
+      body              = paste0("触发次数：", notif_trigger()),
+      duration          = 5000,
+      requestPermission = TRUE
+    )
   })
 }
 
