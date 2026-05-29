@@ -1,12 +1,15 @@
 Package: shinyAntDesignX
-Title: Ant Design X AI Chat UI for Shiny
-Version: 0.1.0
+Title: Ant Design X Components for R Shiny
+Version: 0.2.0
 Authors@R: person("Kaiping", "Yang", role = c("aut", "cre"),
     email = "kaiping.yang@example.com")
-Description: A collection of Shiny htmlwidgets wrapping Ant Design X React components.
-    Provides component-based widgets: streaming Markdown (XMarkdown), syntax-highlighted
-    code (CodeHighlighter), Mermaid diagrams, tool call chain visualization (ThoughtChain),
-    and a full AI chat interface with streaming, tool calls, and conversation history.
+Description: A collection of Shiny htmlwidgets wrapping Ant Design X React components
+    for building AI-driven interfaces. Provides 19 independent widgets covering the full
+    @ant-design/x component set: XMarkdown (streaming Markdown), CodeHighlighter, Mermaid,
+    ThoughtChain, Think, BubbleList, Sender, Attachments, Suggestion, Actions, Sources,
+    FileCard, Folder, Conversations, Welcome, Prompts, Notification, XCard (A2UI v0.9
+    dynamic card protocol), plus a full AI chat widget (antDesignXOutput) with streaming,
+    tool calls, slash commands, and conversation history.
 License: MIT
 Encoding: UTF-8
 RoxygenNote: 7.3.2
@@ -16,4 +19,6 @@ Imports:
     shiny,
     promises
 Suggests:
-    devtools
+    devtools,
+    base64enc,
+    here

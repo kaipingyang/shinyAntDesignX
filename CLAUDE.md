@@ -63,6 +63,33 @@ R server: `antDesignXServer(id, handler, ...)` — handler receives `on_chunk / 
 - XMarkdown `config` prop must be referentially stable (use `useMemo`)
 - XMarkdown streaming: **must set `hasNextChunk: false` on final chunk** — leaving it `true` freezes incomplete syntax placeholders
 - Vite IIFE format doesn't support multiple entries in one config — each widget built separately via `WIDGET_ENTRY` env var
+- FileCard with `type="image"` but no `src` → broken antd Image; fix: pass `type="file"` + `icon="image"` (see `fileCard/index.tsx resolveType`)
+- Actions `onClick` top-level fires only for dropdown submenus; use per-item `onItemClick` for regular buttons
+- Conversations `activeKey` must be local React state (not directly bound to R) — R provides initial value only
+
+## All R exports (v0.2.0)
+
+| Widget | Output fn | Render fn |
+|--------|-----------|-----------|
+| Full chat | `antDesignXOutput` | `renderAntDesignX` / `antDesignXServer` |
+| XMarkdown | `shinyXMarkdownOutput` | `renderShinyXMarkdown` |
+| CodeHighlighter | `shinyCodeHighlighterOutput` | `renderShinyCodeHighlighter` |
+| Mermaid | `shinyMermaidOutput` | `renderShinyMermaid` |
+| ThoughtChain | `shinyThoughtChainOutput` | `renderShinyThoughtChain` |
+| Think | `shinyThinkOutput` | `renderShinyThink` |
+| BubbleList | `shinyBubbleListOutput` | `renderShinyBubbleList` |
+| Sender | `shinySenderOutput` | `renderShinySender` |
+| Attachments | `shinyAttachmentsOutput` | `renderShinyAttachments` |
+| Suggestion | `shinySuggestionOutput` | `renderShinySuggestion` |
+| Actions | `shinyActionsOutput` | `renderShinyActions` |
+| Sources | `shinySourcesOutput` | `renderShinySources` |
+| FileCard | `shinyFileCardOutput` | `renderShinyFileCard` |
+| Folder | `shinyFolderOutput` | `renderShinyFolder` |
+| Conversations | `shinyConversationsOutput` | `renderShinyConversations` |
+| Welcome | `shinyWelcomeOutput` | `renderShinyWelcome` |
+| Prompts | `shinyPromptsOutput` | `renderShinyPrompts` |
+| Notification | `shinyNotificationOutput` | `renderShinyNotification` |
+| XCard | `shinyXCardOutput` | `renderShinyXCard` + `xcard_create_surface()` / `xcard_update_components()` / `xcard_update_data()` |
 
 ## Reference docs
 
