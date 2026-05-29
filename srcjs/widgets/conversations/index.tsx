@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import ReactDOM from "react-dom/client";
 import { Conversations } from "@ant-design/x";
 import { ConfigProvider, theme as antdTheme } from "antd";
@@ -21,7 +21,9 @@ interface ConversationsWidgetProps {
   showCreation?: boolean;
 }
 
-function ConversationsWidget({ inputId, items, activeKey, groupable = false, showCreation = false }: ConversationsWidgetProps) {
+function ConversationsWidget({ inputId, items, activeKey: initialKey, groupable = false, showCreation = false }: ConversationsWidgetProps) {
+  const [activeKey, setActiveKey] = useState<string | undefined>(initialKey);
+
   return (
     <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm }}>
       <Conversations
@@ -29,9 +31,13 @@ function ConversationsWidget({ inputId, items, activeKey, groupable = false, sho
         activeKey={activeKey}
         groupable={groupable}
         creation={showCreation ? {
-          onClick: () => Shiny.setInputValue(`${inputId}_new`, { ts: Date.now() }, { priority: "event" })
+          onClick: () => {
+            setActiveKey(undefined);
+            Shiny.setInputValue(`${inputId}_new`, { ts: Date.now() }, { priority: "event" });
+          }
         } : undefined}
         onActiveChange={(key) => {
+          setActiveKey(key);
           Shiny.setInputValue(inputId, { key, ts: Date.now() }, { priority: "event" });
         }}
       />

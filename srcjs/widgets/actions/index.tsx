@@ -37,6 +37,9 @@ function ActionsWidget({ inputId, items, variant = "borderless" }: ActionsWidget
     label: item.label,
     icon: getIcon(item.icon),
     danger: item.danger,
+    onItemClick: () => {
+      Shiny.setInputValue(inputId, { key: item.key, ts: Date.now() }, { priority: "event" });
+    },
   }));
 
   return (
@@ -44,9 +47,6 @@ function ActionsWidget({ inputId, items, variant = "borderless" }: ActionsWidget
       <Actions
         items={actionItems}
         variant={variant}
-        onClick={({ key }) => {
-          Shiny.setInputValue(inputId, { key, ts: Date.now() }, { priority: "event" });
-        }}
       />
     </ConfigProvider>
   );

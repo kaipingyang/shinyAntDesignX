@@ -21,15 +21,28 @@ interface FileCardWidgetProps {
   size?: "small" | "default";
 }
 
+// When type is image/audio/video but no src provided, fall back to file icon
+function resolveType(item: FileCardItem): { type?: string; icon?: string } {
+  if (item.src) return { type: item.type };
+  // No src: use icon preset instead of broken preview
+  const iconMap: Record<string, string> = {
+    image: "image", audio: "audio", video: "video",
+  };
+  if (item.type && iconMap[item.type]) return { type: "file", icon: iconMap[item.type] };
+  return { type: item.type };
+}
+
 function FileCardWidget({ inputId, items, size = "default" }: FileCardWidgetProps) {
   if (items.length === 1) {
     const item = items[0];
+    const { type, icon } = resolveType(item);
     return (
       <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm }}>
         <FileCard
           name={item.name}
           byte={item.byte}
-          type={item.type as "file" | "image" | undefined}
+          type={type as "file" | "image" | undefined}
+          icon={icon as string | undefined}
           src={item.src}
           loading={item.loading}
           size={size}
@@ -44,14 +57,18 @@ function FileCardWidget({ inputId, items, size = "default" }: FileCardWidgetProp
   return (
     <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm }}>
       <FileCard.List
-        items={items.map((item, i) => ({
-          name: item.name,
-          byte: item.byte,
-          type: item.type as "file" | "image" | undefined,
-          src: item.src,
-          loading: item.loading,
-          uid: String(i),
-        }))}
+        items={items.map((item, i) => {
+          const { type, icon } = resolveType(item);
+          return {
+            name: item.name,
+            byte: item.byte,
+            type: type as "file" | "image" | undefined,
+            icon: icon as string | undefined,
+            src: item.src,
+            loading: item.loading,
+            uid: String(i),
+          };
+        })}
         size={size}
       />
     </ConfigProvider>
