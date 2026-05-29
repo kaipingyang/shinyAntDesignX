@@ -15,6 +15,7 @@
     "@ant-design/x": "latest",
     "@ant-design/x-card": "^2.7.0",
     "@ant-design/x-markdown": "^2.7.0",
+    "@ant-design/x-sdk": "^2.7.0",
     "antd": "^6",
     "react": "^18",
     "react-dom": "^18"

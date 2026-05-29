@@ -29,12 +29,12 @@ export type SessionItem = {
 };
 
 export type RunCallbacks = {
-  onChunk: (text: string) => void;
-  onThinking?: (text: string) => void;
-  onToolCall: (toolCall: ToolCallPayload) => void;
-  onToolResult: (toolCallId: string, result: unknown, isError: boolean) => void;
-  onDone: () => void;
-  onError: (message: string) => void;
+  onChunk: (text: string, threadId?: string) => void;
+  onThinking?: (text: string, threadId?: string) => void;
+  onToolCall: (toolCall: ToolCallPayload, threadId?: string) => void;
+  onToolResult: (toolCallId: string, result: unknown, isError: boolean, threadId?: string) => void;
+  onDone: (threadId?: string) => void;
+  onError: (message: string, threadId?: string) => void;
 };
 
 export interface ShinyBridge {
@@ -62,31 +62,34 @@ export function createShinyBridge(inputId: string): ShinyBridge {
 
   // 注册一次，内部路由到当前运行的回调
   Shiny.addCustomMessageHandler(`${inputId}:chunk`, (data) => {
-    const d = data as { text: string };
-    currentCallbacks?.onChunk(d.text);
+    const d = data as { text: string; threadId?: string };
+    currentCallbacks?.onChunk(d.text, d.threadId);
   });
 
   Shiny.addCustomMessageHandler(`${inputId}:done`, (_data) => {
-    currentCallbacks?.onDone();
+    const d = _data as { threadId?: string };
+    currentCallbacks?.onDone(d?.threadId);
   });
 
   Shiny.addCustomMessageHandler(`${inputId}:error`, (data) => {
-    const d = data as { message: string };
-    currentCallbacks?.onError(d.message);
+    const d = data as { message: string; threadId?: string };
+    currentCallbacks?.onError(d.message, d.threadId);
   });
 
   Shiny.addCustomMessageHandler(`${inputId}:thinking`, (data) => {
-    const d = data as { text: string };
-    currentCallbacks?.onThinking?.(d.text);
+    const d = data as { text: string; threadId?: string };
+    currentCallbacks?.onThinking?.(d.text, d.threadId);
   });
 
   Shiny.addCustomMessageHandler(`${inputId}:tool-call`, (data) => {
-    currentCallbacks?.onToolCall(data as ToolCallPayload);
+    const d = data as ToolCallPayload & { threadId?: string };
+    const { threadId, ...payload } = d;
+    currentCallbacks?.onToolCall(payload as ToolCallPayload, threadId);
   });
 
   Shiny.addCustomMessageHandler(`${inputId}:tool-result`, (data) => {
-    const d = data as { toolCallId: string; result: unknown; isError?: boolean };
-    currentCallbacks?.onToolResult(d.toolCallId, d.result, d.isError ?? false);
+    const d = data as { toolCallId: string; result: unknown; isError?: boolean; threadId?: string };
+    currentCallbacks?.onToolResult(d.toolCallId, d.result, d.isError ?? false, d.threadId);
   });
 
   Shiny.addCustomMessageHandler(`${inputId}:sessions`, (data) => {

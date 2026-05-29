@@ -1,9 +1,11 @@
-import React, { useState, useRef, useCallback, useMemo } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { theme as antdTheme, Avatar, ConfigProvider, Dropdown } from "antd";
 import { Bubble, Conversations, Sender, ThoughtChain, Think, Welcome, Prompts } from "@ant-design/x";
-import type { BubbleProps } from "@ant-design/x";
+import type { BubbleProps, ConversationsProps } from "@ant-design/x";
 import XMarkdown from "@ant-design/x-markdown";
 import "@ant-design/x-markdown/themes/light.css";
+import { useXChat, useXConversations } from "@ant-design/x-sdk";
+import type { MessageInfo } from "@ant-design/x-sdk";
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -20,26 +22,28 @@ import {
   BulbOutlined,
   SafetyOutlined,
 } from "@ant-design/icons";
-import { useShinyState } from "./state";
-import type { ThreadMessage, ToolCallState, WidgetConfig } from "./types";
-import type { AttachmentData } from "./bridge";
+import { ShinyBridgeRequest } from "./ShinyBridgeRequest";
+import { createShinyProvider } from "./ShinyBridgeChatProvider";
+import type { ShinyMessage } from "./ShinyBridgeChatProvider";
+import type { ShinyInput } from "./ShinyBridgeRequest";
+import type { ToolCallState, WidgetConfig } from "./types";
+import type { SessionItem, AttachmentData } from "./bridge";
 
-// ── Icon mapping (annotations.icon → Ant Design Icon) ───────────────────────
+// ── Icon mapping ──────────────────────────────────────────────────────────────
 const TOOL_ICONS: Record<string, React.ReactNode> = {
-  "search":    <SearchOutlined />,
-  "database":  <DatabaseOutlined />,
-  "code":      <CodeOutlined />,
-  "globe":     <GlobalOutlined />,
-  "zap":       <ThunderboltOutlined />,
-  "terminal":  <CodeSandboxOutlined />,
-  "flask":     <ExperimentOutlined />,
-  "wrench":    <ToolOutlined />,
-  "bulb":      <BulbOutlined />,
-  "shield":    <SafetyOutlined />,
+  "search":   <SearchOutlined />,
+  "database": <DatabaseOutlined />,
+  "code":     <CodeOutlined />,
+  "globe":    <GlobalOutlined />,
+  "zap":      <ThunderboltOutlined />,
+  "terminal": <CodeSandboxOutlined />,
+  "flask":    <ExperimentOutlined />,
+  "wrench":   <ToolOutlined />,
+  "bulb":     <BulbOutlined />,
+  "shield":   <SafetyOutlined />,
 };
 
-// ── Tool result renderers ────────────────────────────────────────────────────
-
+// ── Tool result renderer ──────────────────────────────────────────────────────
 function TableResult({ data }: { data: unknown }) {
   let rows: Record<string, unknown>[];
   try {
@@ -80,31 +84,24 @@ function ToolResultContent({ tc }: { tc: ToolCallState }) {
   const resultType = (ann.resultType as string | undefined) ?? "auto";
   const result = tc.result;
   const display = typeof result === "string" ? result : JSON.stringify(result, null, 2);
-
   if (tc.isError) {
     return <pre style={{ margin: 0, fontSize: "12px", color: "#991b1b", background: "rgba(220,38,38,0.06)", padding: "6px 8px", borderRadius: "4px", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{display}</pre>;
   }
-
   switch (resultType) {
-    case "table": return <TableResult data={result} />;
+    case "table":    return <TableResult data={result} />;
     case "markdown": return <div style={{ fontSize: "13px", lineHeight: 1.6 }}>{display}</div>;
-    case "image": return <img src={display} alt="result" style={{ maxWidth: "100%", borderRadius: "4px" }} />;
-    case "html": return <div style={{ fontSize: "13px" }} dangerouslySetInnerHTML={{ __html: display }} />;
+    case "image":    return <img src={display} alt="result" style={{ maxWidth: "100%", borderRadius: "4px" }} />;
+    case "html":     return <div style={{ fontSize: "13px" }} dangerouslySetInnerHTML={{ __html: display }} />;
     case "file": {
       const filename = (ann.resultFilename as string | undefined) ?? "download";
-      return (
-        <a href={display} download={filename} style={{ fontSize: "12px", color: "#1677ff" }}>
-          ⬇ {filename}
-        </a>
-      );
+      return <a href={display} download={filename} style={{ fontSize: "12px", color: "#1677ff" }}>⬇ {filename}</a>;
     }
     default:
       return <pre style={{ margin: 0, fontSize: "12px", background: "rgba(0,0,0,0.04)", padding: "6px 8px", borderRadius: "4px", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{display}</pre>;
   }
 }
 
-// ── ThoughtChain items builder ───────────────────────────────────────────────
-
+// ── ThoughtChain builder ──────────────────────────────────────────────────────
 function buildThoughtChainItems(
   toolCalls: ToolCallState[],
   onApprove: (id: string, approved: boolean) => void,
@@ -115,30 +112,17 @@ function buildThoughtChainItems(
     const iconName = ann.icon as string | undefined;
     const requiresApproval = ann.requiresApproval === true;
     const awaiting = tc.status === "loading" && requiresApproval;
-
     const icon = awaiting ? <SafetyOutlined style={{ color: "#d97706" }} />
       : tc.status === "loading" ? <LoadingOutlined style={{ color: "#9ca3af" }} />
       : tc.status === "success" ? <CheckCircleOutlined style={{ color: "#16a34a" }} />
       : tc.status === "error"   ? <CloseCircleOutlined style={{ color: "#dc2626" }} />
       : <StopOutlined style={{ color: "#6b7280" }} />;
-
     const footer = awaiting ? (
       <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-        <button
-          onClick={() => onApprove(tc.toolCallId, true)}
-          style={{ padding: "4px 14px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "none", background: "#16a34a", color: "#fff" }}
-        >
-          Approve
-        </button>
-        <button
-          onClick={() => onApprove(tc.toolCallId, false)}
-          style={{ padding: "4px 14px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "none", background: "#6b7280", color: "#fff" }}
-        >
-          Deny
-        </button>
+        <button onClick={() => onApprove(tc.toolCallId, true)} style={{ padding: "4px 14px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "none", background: "#16a34a", color: "#fff" }}>Approve</button>
+        <button onClick={() => onApprove(tc.toolCallId, false)} style={{ padding: "4px 14px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "none", background: "#6b7280", color: "#fff" }}>Deny</button>
       </div>
     ) : undefined;
-
     const argsDisplay = typeof tc.argsText === "string" ? tc.argsText : JSON.stringify(tc.args, null, 2);
     const content = (
       <div>
@@ -152,7 +136,6 @@ function buildThoughtChainItems(
         )}
       </div>
     );
-
     return {
       key: tc.toolCallId,
       title,
@@ -166,13 +149,14 @@ function buildThoughtChainItems(
   });
 }
 
-// ── AssistantContent: ThoughtChain + reasoning + text ────────────────────────
-
+// ── AssistantContent ──────────────────────────────────────────────────────────
 function AssistantContent({
   msg,
+  isStreaming,
   onApprove,
 }: {
-  msg: ThreadMessage;
+  msg: ShinyMessage;
+  isStreaming: boolean;
   onApprove: (id: string, approved: boolean) => void;
 }) {
   const thoughtItems = useMemo(
@@ -180,36 +164,41 @@ function AssistantContent({
     [msg.toolCalls, onApprove]
   );
 
+  // XMarkdown requires an explicit {hasNextChunk: false} frame to flush
+  // incomplete syntax placeholders. Track whether we just finished streaming.
+  const prevStreamingRef = useRef(isStreaming);
+  const [justFinished, setJustFinished] = useState(false);
+  useEffect(() => {
+    if (prevStreamingRef.current && !isStreaming) {
+      setJustFinished(true);
+      const t = setTimeout(() => setJustFinished(false), 0);
+      return () => clearTimeout(t);
+    }
+    prevStreamingRef.current = isStreaming;
+  }, [isStreaming]);
+
+  const streamingProp = isStreaming
+    ? { hasNextChunk: true as const, enableAnimation: true, tail: msg.toolCalls.every(tc => tc.status !== "loading") }
+    : justFinished
+    ? { hasNextChunk: false as const }
+    : undefined;
   return (
     <div>
       {msg.reasoningContent && (
-        <Think
-          loading={msg.isStreaming}
-          blink={msg.isStreaming}
-          defaultExpanded={false}
-          style={{ marginBottom: 8 }}
-        >
+        <Think loading={isStreaming} blink={isStreaming} defaultExpanded={false} style={{ marginBottom: 8 }}>
           {msg.reasoningContent}
         </Think>
       )}
       {msg.toolCalls.length > 0 && (
-        <ThoughtChain
-          items={thoughtItems}
-          style={{ marginBottom: msg.textContent ? 12 : 0 }}
-        />
+        <ThoughtChain items={thoughtItems} style={{ marginBottom: msg.textContent ? 12 : 0 }} />
       )}
       {msg.textContent && (
         <XMarkdown
           content={msg.textContent}
-          streaming={msg.isStreaming ? {
-            hasNextChunk: true,
-            enableAnimation: true,
-            // Show tail cursor only when there are no pending tool calls
-            tail: msg.toolCalls.every(tc => tc.status !== "loading"),
-          } : undefined}
+          streaming={streamingProp}
         />
       )}
-      {msg.isStreaming && !msg.textContent && msg.toolCalls.length === 0 && !msg.reasoningContent && (
+      {isStreaming && !msg.textContent && msg.toolCalls.length === 0 && !msg.reasoningContent && (
         <span style={{ color: "#9ca3af", fontSize: "13px" }}>Thinking…</span>
       )}
     </div>
@@ -217,45 +206,227 @@ function AssistantContent({
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-
 interface AntDesignXProps {
   inputId: string;
   config: WidgetConfig;
 }
 
+function makeThreadId() {
+  return `t_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
 export default function AntDesignX({ inputId, config }: AntDesignXProps) {
+  // ── x-sdk provider (one per widget, never recreated) ─────────────────────
+  const [request] = useState(() => new ShinyBridgeRequest(inputId));
+  const [provider] = useState(() => createShinyProvider(request));
+  const bridge = request.getBridge();
+
+  // ── conversations (thread list) ───────────────────────────────────────────
+  const [initThreadId] = useState(makeThreadId);
   const {
-    threads,
-    currentThreadId,
-    messages,
-    isStreaming,
-    handleSubmit,
-    handleCancel,
-    sendToolApproval,
-    switchToNewThread,
-    switchToThread,
-    archiveThread,
-    deleteThread,
-    commands,
-  } = useShinyState(inputId, config);
+    conversations,
+    activeConversationKey,
+    setActiveConversationKey,
+    addConversation,
+    removeConversation,
+    setConversations,
+    setConversation,
+  } = useXConversations({
+    defaultConversations: [{ key: initThreadId, label: "New Chat" }],
+    defaultActiveConversationKey: initThreadId,
+  });
 
-  const showConversations = config.show_conversation_list === true;
+  // ── useXChat ──────────────────────────────────────────────────────────────
+  const { messages, onRequest, isRequesting, abort, setMessages, onReload } = useXChat<
+    ShinyMessage,
+    ShinyMessage,
+    ShinyInput
+  >({
+    provider,
+    conversationKey: activeConversationKey,
+    requestPlaceholder: { role: "assistant", textContent: "", toolCalls: [] },
+    requestFallback: (_, { error, messageInfo }) => {
+      if (error.name === "AbortError") {
+        const prev = (messageInfo as MessageInfo<ShinyMessage> | undefined)?.message;
+        return { role: "assistant", textContent: prev?.textContent ?? "", toolCalls: prev?.toolCalls ?? [] };
+      }
+      return { role: "assistant", textContent: `⚠ Error: ${error.message}`, toolCalls: [] };
+    },
+  });
 
-  // ── sender state ─────────────────────────────────────────────────────────
+  // ── refs always current, safe inside stale closures ───────────────────────
+  const setMessagesRef = useRef(setMessages);
+  setMessagesRef.current = setMessages;
+
+  // ── tool-result side-channel ──────────────────────────────────────────────
+  // transformMessage passes through "tool-result" chunks (returns base unchanged).
+  // ShinyBridgeRequest calls __toolResultHook instead so we can scan all messages
+  // synchronously — no async useEffect needed, no map/index required.
+  const toolResultHandlerRef = useRef<((toolCallId: string, result: unknown, isError: boolean) => void) | null>(null);
+  toolResultHandlerRef.current = (toolCallId, result, isError) => {
+    setMessagesRef.current((all) =>
+      all.map((mi) => {
+        if (mi.message.role !== "assistant") return mi;
+        if (!mi.message.toolCalls.some((tc) => tc.toolCallId === toolCallId)) return mi;
+        return {
+          ...mi,
+          message: {
+            ...mi.message,
+            toolCalls: mi.message.toolCalls.map((tc) =>
+              tc.toolCallId === toolCallId
+                ? { ...tc, result, isError, status: isError ? "error" as const : "success" as const }
+                : tc
+            ),
+          },
+        };
+      })
+    );
+  };
+
+  useEffect(() => {
+    request.toolResultHook = (toolCallId: string, result: unknown, isError: boolean) => {
+      toolResultHandlerRef.current?.(toolCallId, result, isError);
+    };
+    return () => { request.toolResultHook = null; };
+  }, [request]);
+
+  // ── tool approval ─────────────────────────────────────────────────────────
+  const sendToolApproval = useCallback((toolCallId: string, approved: boolean) => {
+    bridge.sendToolApproval(toolCallId, approved);
+    if (!approved) {
+      setMessagesRef.current((all) =>
+        all.map((mi) => {
+          if (mi.message.role !== "assistant") return mi;
+          if (!mi.message.toolCalls.some((tc) => tc.toolCallId === toolCallId)) return mi;
+          return {
+            ...mi,
+            message: {
+              ...mi.message,
+              toolCalls: mi.message.toolCalls.map((tc) =>
+                tc.toolCallId === toolCallId ? { ...tc, status: "abort" as const } : tc
+              ),
+            },
+          };
+        })
+      );
+    }
+  }, [bridge]);
+
+  // ── submit ────────────────────────────────────────────────────────────────
+  const handleSubmit = useCallback((text: string, attachments?: AttachmentData[]) => {
+    if (!text.trim()) return;
+    // Auto-name the conversation on its first message
+    const isFirst = messages.length === 0;
+    if (isFirst) {
+      const label = text.slice(0, 24) + (text.length > 24 ? "…" : "");
+      setConversation(activeConversationKey, { label });
+    }
+    onRequest({ query: text, threadId: activeConversationKey, attachments });
+  }, [onRequest, activeConversationKey, messages.length, setConversation]);
+
+  // ── server sessions ───────────────────────────────────────────────────────
+  const unloadedSessionIds = useRef(new Set<string>());
+  // Track locally-created thread IDs so onSessions can preserve them
+  const localThreadIds = useRef(new Set<string>([initThreadId]));
+  const activeKeyRef = useRef(activeConversationKey);
+  activeKeyRef.current = activeConversationKey;
+  // Keep conversations ref current so stale onSessions closure can read latest labels
+  const conversationsRef = useRef(conversations);
+  conversationsRef.current = conversations;
+
+  useEffect(() => {
+    bridge.onSessions(({ sessions }: { sessions: SessionItem[] }) => {
+      if (sessions.length === 0) return;
+
+      const serverIds = new Set(sessions.map((s) => s.id));
+      const serverThreads = sessions.map((s) => ({ key: s.id, label: s.title || s.id }));
+
+      // Preserve threads created in this session that aren't on the server yet,
+      // keeping their current labels (may have been auto-named by handleSubmit)
+      const currentLabelMap = new Map(conversationsRef.current.map((c) => [c.key, c.label]));
+      const localNew = [...localThreadIds.current]
+        .filter((k) => !serverIds.has(k))
+        .map((k) => ({ key: k, label: currentLabelMap.get(k) ?? "New Chat" }));
+
+      setConversations([...localNew, ...serverThreads]);
+      for (const s of sessions) unloadedSessionIds.current.add(s.id);
+
+      const cur = activeKeyRef.current;
+      // Only redirect if current thread isn't a known server session or local thread
+      if (!serverIds.has(cur) && !localThreadIds.current.has(cur)) {
+        setActiveConversationKey(sessions[0].id);
+      }
+
+      const activateId = serverIds.has(cur) ? cur : sessions[0].id;
+      if (unloadedSessionIds.current.has(activateId)) {
+        bridge.sendLoadSession(activateId, activateId);
+        unloadedSessionIds.current.delete(activateId);
+      }
+    });
+
+    bridge.onLoadThread(({ threadId, messages: rawMsgs }: { threadId: string; messages: unknown[] }) => {
+      unloadedSessionIds.current.delete(threadId);
+      const converted = (rawMsgs as any[]).map((m: any) => {
+        if (m.role === "user") {
+          return {
+            id:      m.key,
+            message: { role: "user" as const, textContent: m.textContent ?? "", toolCalls: [], attachments: m.attachments },
+            status:  "local" as const,
+          };
+        }
+        const toolCalls: ToolCallState[] = (m.toolCalls ?? []).map((tc: any) => ({
+          toolCallId:  tc.toolCallId,
+          toolName:    tc.toolName,
+          args:        tc.args ?? {},
+          argsText:    tc.argsText ?? "{}",
+          annotations: tc.annotations,
+          result:      tc.result,
+          isError:     tc.isError,
+          status:      tc.status ?? "success",
+        }));
+        return {
+          id:      m.key,
+          message: { role: "assistant" as const, textContent: m.textContent ?? "", reasoningContent: m.reasoningContent, toolCalls },
+          status:  "success" as const,
+        };
+      });
+      // Use ref — closure captures stale setMessages without it
+      setMessagesRef.current(converted);
+    });
+
+    bridge.onClear(() => {
+      const newId = makeThreadId();
+      localThreadIds.current.add(newId);
+      addConversation({ key: newId, label: "New Chat" });
+      setActiveConversationKey(newId);
+    });
+
+    bridge.sendReady();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── conversation switch: lazy-load server sessions ────────────────────────
+  const handleConversationChange = useCallback((key: string) => {
+    setActiveConversationKey(key);
+    if (unloadedSessionIds.current.has(key)) {
+      bridge.sendLoadSession(key, key);
+      unloadedSessionIds.current.delete(key);
+    }
+  }, [bridge, setActiveConversationKey]);
+
+  // ── sender state ──────────────────────────────────────────────────────────
   const [inputValue, setInputValue] = useState("");
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSenderSubmit = useCallback((text: string) => {
-    setInputValue("");
-    handleSubmit(text);
-  }, [handleSubmit]);
+  const commands = config.commands ?? [];
+  const suggestions = config.suggestions ?? [];
+  const showConversations = config.show_conversation_list === true;
+  const showWelcome = messages.length === 0 && !isRequesting;
+  const avatarConfig = config.assistant_avatar ?? { fallback: "AI" };
 
   // ── file attachment ───────────────────────────────────────────────────────
   const handlePasteFile = useCallback((files: FileList) => {
-    // Read first file and submit as attachment with the current message
-    // For simplicity, encode and submit immediately
     const file = files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -270,49 +441,47 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
       handleSubmit(inputValue || `[Attached: ${file.name}]`, [att]);
       setInputValue("");
     };
-    if (file.type.startsWith("image/") || file.type.startsWith("text/")) {
-      reader.readAsDataURL(file);
-    } else {
-      reader.readAsDataURL(file);
-    }
+    reader.readAsDataURL(file);
   }, [inputValue, handleSubmit]);
 
-  // ── build Bubble.List items ───────────────────────────────────────────────
-  const bubbleItems = useMemo((): (BubbleProps & { key: string; role: string })[] => {
-    return messages.map((msg) => {
-      if (msg.role === "user") {
-        return {
-          key: msg.key,
-          role: "user",
-          content: msg.textContent,
-          typing: false,
-        };
+  // ── Bubble.List items ─────────────────────────────────────────────────────
+  const bubbleItems = useMemo((): (BubbleProps & { key: string | number; role: string })[] => {
+    return messages.map(({ id, message, status }, idx) => {
+      const isStreaming = status === "loading" || status === "updating";
+      if (message.role === "user") {
+        return { key: id, role: "user", content: message.textContent, typing: false };
       }
-      // assistant message
+      // Find the preceding user message — walk backwards, no allocation
+      let reloadQuery = "";
+      for (let i = idx - 1; i >= 0; i--) {
+        if (messages[i].message.role === "user") { reloadQuery = messages[i].message.textContent; break; }
+      }
       return {
-        key: msg.key,
+        key: id,
         role: "assistant",
         content: (
-          <AssistantContent
-            msg={msg}
-            onApprove={sendToolApproval}
-          />
+          <AssistantContent msg={message} isStreaming={isStreaming} onApprove={sendToolApproval} />
         ),
-        typing: msg.isStreaming && msg.textContent.length > 0
+        typing: isStreaming && message.textContent.length > 0
           ? { effect: "typing" as const, step: 2, interval: 50 } : false,
-        streaming: msg.isStreaming,
-        loading: msg.isStreaming && msg.textContent === "" && msg.toolCalls.length === 0 && !msg.reasoningContent,
+        loading: isStreaming && message.textContent === "" && message.toolCalls.length === 0 && !message.reasoningContent,
+        // Regenerate button — disabled while any request is in flight
+        footer: !isStreaming && status === "success" && reloadQuery ? (
+          <button
+            disabled={isRequesting}
+            onClick={() => onReload(id, { query: reloadQuery, threadId: activeConversationKey })}
+            style={{ marginTop: 4, padding: "2px 10px", fontSize: "11px", cursor: isRequesting ? "not-allowed" : "pointer", border: "1px solid #e5e7eb", borderRadius: "4px", background: "transparent", color: "#9ca3af" }}
+          >
+            ↺ Regenerate
+          </button>
+        ) : undefined,
       };
     });
-  }, [messages, sendToolApproval]);
+  }, [messages, sendToolApproval, isRequesting, onReload, activeConversationKey]);
 
-  // ── avatar config ─────────────────────────────────────────────────────────
-  const avatarConfig = config.assistant_avatar ?? { fallback: "AI" };
-
+  // ── bubble role config ────────────────────────────────────────────────────
   const bubbleRoles = useMemo(() => ({
-    user: {
-      placement: "end" as const,
-    },
+    user: { placement: "end" as const },
     assistant: {
       placement: "start" as const,
       avatar: avatarConfig.src
@@ -321,60 +490,68 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
     },
   }), [avatarConfig]);
 
-  // ── suggestions (welcome screen) ─────────────────────────────────────────
-  const suggestions = config.suggestions ?? [];
-  const showWelcome = messages.length === 0 && !isStreaming;
+  // ── conversations menu (archive / delete) ─────────────────────────────────
+  const conversationMenu: ConversationsProps["menu"] = useCallback(
+    (item: { key: string }) => ({
+      items: [
+        { key: "delete", label: <span style={{ color: "#ef4444" }}>Delete</span> },
+      ],
+      onClick: ({ key }: { key: string }) => {
+        if (key === "delete") {
+          removeConversation(item.key);
+          if (item.key === activeConversationKey && conversations.length > 1) {
+            const next = conversations.find((c) => c.key !== item.key);
+            if (next) setActiveConversationKey(next.key);
+          }
+        }
+      },
+    }),
+    [removeConversation, conversations, activeConversationKey, setActiveConversationKey]
+  );
 
-  // ── conversations menu ────────────────────────────────────────────────────
-  const conversationMenu = useCallback((item: { key: string; label: React.ReactNode }) => ({
-    items: [
-      { key: "archive", label: "Archive" },
-      { key: "delete", label: <span style={{ color: "#ef4444" }}>Delete</span> },
-    ],
-    onClick: ({ key }: { key: string }) => {
-      if (key === "archive") archiveThread(item.key);
-      if (key === "delete") deleteThread(item.key);
-    },
-  }), [archiveThread, deleteThread]);
-
-  // ── slash command dropdown items ─────────────────────────────────────────
+  // ── slash dropdown ────────────────────────────────────────────────────────
   const dropdownItems = useMemo(() => {
     const q = slashQuery.toLowerCase();
-    const filtered = commands.filter(
-      (c) => !q || c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q)
-    );
-    return filtered.map((cmd) => ({
-      key: cmd.name,
-      label: (
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ fontWeight: 500 }}>/{cmd.name}</span>
-          {cmd.description && <span style={{ color: "#6b7280", fontSize: "12px" }}>{cmd.description}</span>}
-        </div>
-      ),
-    }));
+    return commands
+      .filter((c) => !q || c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q))
+      .map((cmd) => ({
+        key: cmd.name,
+        label: (
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <span style={{ fontWeight: 500 }}>/{cmd.name}</span>
+            {cmd.description && <span style={{ color: "#6b7280", fontSize: "12px" }}>{cmd.description}</span>}
+          </div>
+        ),
+      }));
   }, [commands, slashQuery]);
 
+  // ── new conversation ──────────────────────────────────────────────────────
+  const handleNewConversation = useCallback(() => {
+    const newId = makeThreadId();
+    localThreadIds.current.add(newId);
+    addConversation({ key: newId, label: "New Chat" });
+    setActiveConversationKey(newId);
+  }, [addConversation, setActiveConversationKey]);
+
+  // ── render ────────────────────────────────────────────────────────────────
   return (
     <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm }}>
       <div style={{ display: "flex", height: "100%", fontFamily: "inherit", overflow: "hidden" }}>
 
-        {/* Conversation sidebar */}
         {showConversations && (
           <div style={{ width: 220, flexShrink: 0, borderRight: "1px solid #f0f0f0", overflow: "auto" }}>
             <Conversations
-              items={threads.map((t) => ({ key: t.key, label: t.label }))}
-              activeKey={currentThreadId}
-              onActiveChange={switchToThread}
-              menu={conversationMenu as Parameters<typeof Conversations>[0]["menu"]}
-              creation={{ onClick: switchToNewThread }}
+              items={conversations}
+              activeKey={activeConversationKey}
+              onActiveChange={handleConversationChange}
+              menu={conversationMenu}
+              creation={{ onClick: handleNewConversation }}
             />
           </div>
         )}
 
-        {/* Main chat area */}
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
-          {/* Welcome + suggestions when no messages */}
           {showWelcome && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "24px" }}>
               <Welcome
@@ -384,10 +561,7 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
               />
               {suggestions.length > 0 && (
                 <Prompts
-                  items={suggestions.map((s, i) => ({
-                    key: String(i),
-                    description: s.text ?? s.prompt,
-                  }))}
+                  items={suggestions.map((s, i) => ({ key: String(i), description: s.text ?? s.prompt }))}
                   onItemClick={(info) => {
                     const s = suggestions[Number(info.data.key)];
                     if (s) handleSubmit(s.prompt);
@@ -397,18 +571,12 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
             </div>
           )}
 
-          {/* Message list */}
           {!showWelcome && (
             <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px" }}>
-              <Bubble.List
-                items={bubbleItems}
-                role={bubbleRoles}
-                autoScroll
-              />
+              <Bubble.List items={bubbleItems} role={bubbleRoles} autoScroll />
             </div>
           )}
 
-          {/* Input area */}
           <div style={{ padding: "8px 16px 16px", flexShrink: 0 }}>
             <input
               ref={fileInputRef}
@@ -439,12 +607,8 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
                   value={inputValue}
                   onChange={(value) => {
                     setInputValue(value);
-                    if (value.startsWith("/")) {
-                      setSlashQuery(value.slice(1));
-                      setSlashOpen(true);
-                    } else {
-                      setSlashOpen(false);
-                    }
+                    if (value.startsWith("/")) { setSlashQuery(value.slice(1)); setSlashOpen(true); }
+                    else setSlashOpen(false);
                   }}
                   onSubmit={(text) => {
                     setSlashOpen(false);
@@ -453,11 +617,12 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
                       const cmd = commands.find((c) => c.name === match[1]);
                       if (cmd) { setInputValue(""); handleSubmit(cmd.prompt); return; }
                     }
-                    handleSenderSubmit(text);
+                    setInputValue("");
+                    handleSubmit(text);
                   }}
-                  onCancel={handleCancel}
+                  onCancel={abort}
                   onPasteFile={handlePasteFile}
-                  loading={isStreaming}
+                  loading={isRequesting}
                   placeholder="Send a message… (/ for commands)"
                   allowSpeech
                 />

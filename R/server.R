@@ -84,36 +84,49 @@ antDesignXServer <- function(id, handler,
   cancel_flags <- new.env(parent = emptyenv())
   cancel_fns   <- new.env(parent = emptyenv())
 
-  on_chunk <- function(text) {
-    session$sendCustomMessage(paste0(input_id, ":chunk"), list(text = text))
-  }
-  on_done <- function() {
-    session$sendCustomMessage(paste0(input_id, ":done"), list())
-  }
-  on_error_fn <- function(msg) {
-    session$sendCustomMessage(paste0(input_id, ":error"), list(message = msg))
-  }
-  on_tool_call <- function(tool_call_id, tool_name, args = list(),
-                           annotations = list()) {
-    session$sendCustomMessage(
-      paste0(input_id, ":tool-call"),
-      list(
-        toolCallId  = tool_call_id,
-        toolName    = tool_name,
-        args        = args,
-        argsText    = as.character(jsonlite::toJSON(args, auto_unbox = TRUE, pretty = FALSE)),
-        annotations = annotations
-      )
+  # ── per-thread callback factory ───────────────────────────────────────────────
+  # Each ExtendedTask invocation gets its own callbacks carrying threadId,
+  # so messages from concurrent/stale threads don't corrupt each other's state.
+  make_callbacks <- function(thread_id) {
+    list(
+      on_chunk = function(text) {
+        session$sendCustomMessage(paste0(input_id, ":chunk"),
+                                  list(text = text, threadId = thread_id))
+      },
+      on_done = function() {
+        session$sendCustomMessage(paste0(input_id, ":done"),
+                                  list(threadId = thread_id))
+      },
+      on_error_fn = function(msg) {
+        session$sendCustomMessage(paste0(input_id, ":error"),
+                                  list(message = msg, threadId = thread_id))
+      },
+      on_tool_call = function(tool_call_id, tool_name, args = list(),
+                              annotations = list()) {
+        session$sendCustomMessage(
+          paste0(input_id, ":tool-call"),
+          list(
+            toolCallId  = tool_call_id,
+            toolName    = tool_name,
+            args        = args,
+            argsText    = as.character(jsonlite::toJSON(args, auto_unbox = TRUE, pretty = FALSE)),
+            annotations = annotations,
+            threadId    = thread_id
+          )
+        )
+      },
+      on_tool_result = function(tool_call_id, result, is_error = FALSE) {
+        session$sendCustomMessage(
+          paste0(input_id, ":tool-result"),
+          list(toolCallId = tool_call_id, result = result, isError = is_error,
+               threadId = thread_id)
+        )
+      },
+      on_thinking = function(text) {
+        session$sendCustomMessage(paste0(input_id, ":thinking"),
+                                  list(text = text, threadId = thread_id))
+      }
     )
-  }
-  on_tool_result <- function(tool_call_id, result, is_error = FALSE) {
-    session$sendCustomMessage(
-      paste0(input_id, ":tool-result"),
-      list(toolCallId = tool_call_id, result = result, isError = is_error)
-    )
-  }
-  on_thinking <- function(text) {
-    session$sendCustomMessage(paste0(input_id, ":thinking"), list(text = text))
   }
 
   approval_resolvers <- new.env(parent = emptyenv())
@@ -172,18 +185,19 @@ antDesignXServer <- function(id, handler,
 
   stream_task <- shiny::ExtendedTask$new(
     function(msg_text, thread_id, is_reload, attachments) {
+      cbs <- make_callbacks(thread_id)
       is_cancelled   <- function() isTRUE(get0(thread_id, envir = cancel_flags))
       register_cancel <- function(fn) assign(thread_id, fn, envir = cancel_fns)
 
       all_args <- list(
         message           = msg_text,
         thread_id         = thread_id,
-        on_chunk          = on_chunk,
-        on_done           = on_done,
-        on_error          = on_error_fn,
-        on_tool_call      = on_tool_call,
-        on_tool_result    = on_tool_result,
-        on_thinking       = on_thinking,
+        on_chunk          = cbs$on_chunk,
+        on_done           = cbs$on_done,
+        on_error          = cbs$on_error_fn,
+        on_tool_call      = cbs$on_tool_call,
+        on_tool_result    = cbs$on_tool_result,
+        on_thinking       = cbs$on_thinking,
         attachments       = attachments,
         is_reload         = is_reload,
         is_cancelled      = is_cancelled,
@@ -196,10 +210,10 @@ antDesignXServer <- function(id, handler,
 
       result <- tryCatch(
         do.call(handler, call_args),
-        error = function(e) { on_error_fn(conditionMessage(e)); NULL }
+        error = function(e) { cbs$on_error_fn(conditionMessage(e)); NULL }
       )
       if (inherits(result, "promise")) {
-        promises::catch(result, function(e) { on_error_fn(conditionMessage(e)); NULL })
+        promises::catch(result, function(e) { cbs$on_error_fn(conditionMessage(e)); NULL })
       } else {
         promises::promise_resolve(NULL)
       }
@@ -248,11 +262,13 @@ antDesignXServer <- function(id, handler,
     clear = function() {
       session$sendCustomMessage(paste0(input_id, ":clear"), list())
     },
-    send_tool_call = function(tool_call_id, tool_name, args = list()) {
-      on_tool_call(tool_call_id, tool_name, args)
+    send_tool_call = function(tool_call_id, tool_name, args = list(), thread_id = "default") {
+      cbs <- make_callbacks(thread_id)
+      cbs$on_tool_call(tool_call_id, tool_name, args)
     },
-    send_tool_result = function(tool_call_id, result, is_error = FALSE) {
-      on_tool_result(tool_call_id, result, is_error)
+    send_tool_result = function(tool_call_id, result, is_error = FALSE, thread_id = "default") {
+      cbs <- make_callbacks(thread_id)
+      cbs$on_tool_result(tool_call_id, result, is_error)
     },
     send_sessions = function(sessions) {
       pending_sessions <<- sessions

@@ -21,4 +21,10 @@ Imports:
 Suggests:
     devtools,
     base64enc,
-    here
+    here,
+    ellmer,
+    coro,
+    later,
+    DBI,
+    RSQLite,
+    ClaudeAgentSDK

@@ -166,7 +166,9 @@ export function useShinyState(inputId: string, config: WidgetConfig) {
       streamingKeyRef.current = null;
 
       bridge.current.setRunCallbacks({
-        onThinking: (thinkingText) => {
+        onThinking: (thinkingText, msgThreadId) => {
+          // Ignore if R sends threadId that doesn't match this run's thread
+          if (msgThreadId && msgThreadId !== threadId) return;
           if (!streamingKeyRef.current) streamingKeyRef.current = makeKey();
           const msgKey = streamingKeyRef.current;
           setMessagesMap((prev) => {
@@ -190,7 +192,8 @@ export function useShinyState(inputId: string, config: WidgetConfig) {
           });
         },
 
-        onChunk: (chunkText) => {
+        onChunk: (chunkText, msgThreadId) => {
+          if (msgThreadId && msgThreadId !== threadId) return;
           if (!streamingKeyRef.current) streamingKeyRef.current = makeKey();
           const msgKey = streamingKeyRef.current;
           setMessagesMap((prev) => {
@@ -214,7 +217,8 @@ export function useShinyState(inputId: string, config: WidgetConfig) {
           });
         },
 
-        onToolCall: (toolCall) => {
+        onToolCall: (toolCall, msgThreadId) => {
+          if (msgThreadId && msgThreadId !== threadId) return;
           // Each tool call is a new assistant message (to allow sequential display)
           streamingKeyRef.current = null;
           const msgKey = `tool-${toolCall.toolCallId}`;
@@ -250,7 +254,8 @@ export function useShinyState(inputId: string, config: WidgetConfig) {
           });
         },
 
-        onToolResult: (toolCallId, result, isError) => {
+        onToolResult: (toolCallId, result, isError, msgThreadId) => {
+          if (msgThreadId && msgThreadId !== threadId) return;
           setMessagesMap((prev) => {
             const msgs = prev[threadId] ?? [];
             const updated = msgs.map((m) => {
@@ -271,7 +276,8 @@ export function useShinyState(inputId: string, config: WidgetConfig) {
           });
         },
 
-        onDone: () => {
+        onDone: (msgThreadId) => {
+          if (msgThreadId && msgThreadId !== threadId) return;
           streamingKeyRef.current = null;
           setIsStreaming(false);
           bridge.current.setRunCallbacks(null);
@@ -282,7 +288,8 @@ export function useShinyState(inputId: string, config: WidgetConfig) {
           });
         },
 
-        onError: (errMsg) => {
+        onError: (errMsg, msgThreadId) => {
+          if (msgThreadId && msgThreadId !== threadId) return;
           streamingKeyRef.current = null;
           setIsStreaming(false);
           bridge.current.setRunCallbacks(null);
