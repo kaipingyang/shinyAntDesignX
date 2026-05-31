@@ -4,7 +4,7 @@
 #' @param width,height CSS dimensions.
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
-shinyThinkOutput <- function(outputId, width = "100%", height = "auto", ...) {
+antDesignXThinkOutput <- function(outputId, width = "100%", height = "auto", ...) {
   htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "think",
     width = width, height = height, package = "shinyAntDesignX", ...)
 }
@@ -15,10 +15,10 @@ shinyThinkOutput <- function(outputId, width = "100%", height = "auto", ...) {
 #'   `loading` (logical), `defaultExpanded` (logical).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderShinyThink <- function(expr, env = parent.frame(), quoted = FALSE) {
+renderAntDesignXThink <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
   htmlwidgets::shinyRenderWidget(
     expr           = bquote(htmlwidgets::createWidget(
                        name = "think", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = shinyThinkOutput, env = baseenv(), quoted = TRUE)
+    outputFunction = antDesignXThinkOutput, env = baseenv(), quoted = TRUE)
 }

@@ -7,7 +7,7 @@
 #' @param width,height CSS dimensions.
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
-shinySuggestionOutput <- function(outputId, width = "100%", height = "auto", ...) {
+antDesignXSuggestionOutput <- function(outputId, width = "100%", height = "auto", ...) {
   htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "suggestion",
     width = width, height = height, package = "shinyAntDesignX", ...)
 }
@@ -18,10 +18,10 @@ shinySuggestionOutput <- function(outputId, width = "100%", height = "auto", ...
 #'   `placeholder` (string), `block` (logical, default TRUE).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderShinySuggestion <- function(expr, env = parent.frame(), quoted = FALSE) {
+renderAntDesignXSuggestion <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
   htmlwidgets::shinyRenderWidget(
     expr           = bquote(htmlwidgets::createWidget(
                        name = "suggestion", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = shinySuggestionOutput, env = baseenv(), quoted = TRUE)
+    outputFunction = antDesignXSuggestionOutput, env = baseenv(), quoted = TRUE)
 }

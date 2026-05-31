@@ -8,7 +8,7 @@
 #' @param width,height CSS dimensions.
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
-shinyAttachmentsOutput <- function(outputId, width = "100%", height = "auto", ...) {
+antDesignXAttachmentsOutput <- function(outputId, width = "100%", height = "auto", ...) {
   htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "attachments",
     width = width, height = height, package = "shinyAntDesignX", ...)
 }
@@ -20,10 +20,10 @@ shinyAttachmentsOutput <- function(outputId, width = "100%", height = "auto", ..
 #'   `overflow` (`"wrap"`, `"scrollX"`, `"scrollY"`).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderShinyAttachments <- function(expr, env = parent.frame(), quoted = FALSE) {
+renderAntDesignXAttachments <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
   htmlwidgets::shinyRenderWidget(
     expr           = bquote(htmlwidgets::createWidget(
                        name = "attachments", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = shinyAttachmentsOutput, env = baseenv(), quoted = TRUE)
+    outputFunction = antDesignXAttachmentsOutput, env = baseenv(), quoted = TRUE)
 }

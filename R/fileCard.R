@@ -6,7 +6,7 @@
 #' @param width,height CSS dimensions.
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
-shinyFileCardOutput <- function(outputId, width = "100%", height = "auto", ...) {
+antDesignXFileCardOutput <- function(outputId, width = "100%", height = "auto", ...) {
   htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "fileCard",
     width = width, height = height, package = "shinyAntDesignX", ...)
 }
@@ -20,10 +20,10 @@ shinyFileCardOutput <- function(outputId, width = "100%", height = "auto", ...) 
 #'   * `inputId` — optional, emits `list(name)` on click.
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderShinyFileCard <- function(expr, env = parent.frame(), quoted = FALSE) {
+renderAntDesignXFileCard <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
   htmlwidgets::shinyRenderWidget(
     expr           = bquote(htmlwidgets::createWidget(
                        name = "fileCard", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = shinyFileCardOutput, env = baseenv(), quoted = TRUE)
+    outputFunction = antDesignXFileCardOutput, env = baseenv(), quoted = TRUE)
 }

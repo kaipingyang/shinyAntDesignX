@@ -59,11 +59,11 @@ shinyAntDesignX 包
 R/
   antDesignX.R          # 现有 chat widget
   server.R              # 现有 chat server
-  xmarkdown.R           # shinyXMarkdownOutput() + renderShinyXMarkdown()
-  codeHighlighter.R     # shinyCodeHighlighterOutput() + renderShinyCodeHighlighter()
-  mermaid.R             # shinyMermaidOutput() + renderShinyMermaid()
-  thoughtChain.R        # shinyThoughtChainOutput() + renderShinyThoughtChain()
-  sender.R              # shinySenderOutput() + shinySenderServer()
+  xmarkdown.R           # antDesignXMarkdownOutput() + renderAntDesignXMarkdown()
+  codeHighlighter.R     # antDesignXCodeHighlighterOutput() + renderAntDesignXCodeHighlighter()
+  mermaid.R             # antDesignXMermaidOutput() + renderAntDesignXMermaid()
+  thoughtChain.R        # antDesignXThoughtChainOutput() + renderAntDesignXThoughtChain()
+  sender.R              # antDesignXSenderOutput() + shinySenderServer()
 
 srcjs/
   # 现有（Tier 3）
@@ -140,8 +140,8 @@ build: {
 
 **R API**：
 ```r
-shinyXMarkdownOutput("id", width = "100%", height = "auto")
-renderShinyXMarkdown({ list(content = "# Hello\n\n**world**", streaming = FALSE) })
+antDesignXMarkdownOutput("id", width = "100%", height = "auto")
+renderAntDesignXMarkdown({ list(content = "# Hello\n\n**world**", streaming = FALSE) })
 ```
 
 **JS 接收**：`{ content: string, streaming: boolean }`
@@ -158,8 +158,8 @@ import { XMarkdown } from "@ant-design/x-markdown";
 
 **R API**：
 ```r
-shinyCodeHighlighterOutput("id")
-renderShinyCodeHighlighter({ list(code = "x <- 1 + 1", lang = "r") })
+antDesignXCodeHighlighterOutput("id")
+renderAntDesignXCodeHighlighter({ list(code = "x <- 1 + 1", lang = "r") })
 ```
 
 **JS 接收**：`{ code: string, lang: string, showHeader: boolean }`
@@ -170,8 +170,8 @@ renderShinyCodeHighlighter({ list(code = "x <- 1 + 1", lang = "r") })
 
 **R API**：
 ```r
-shinyMermaidOutput("id")
-renderShinyMermaid({ list(diagram = "graph TD\nA-->B") })
+antDesignXMermaidOutput("id")
+renderAntDesignXMermaid({ list(diagram = "graph TD\nA-->B") })
 ```
 
 **JS 接收**：`{ diagram: string, enableZoom: boolean, enableDownload: boolean }`
@@ -182,8 +182,8 @@ renderShinyMermaid({ list(diagram = "graph TD\nA-->B") })
 
 **R API**：
 ```r
-shinyThoughtChainOutput("id")
-renderShinyThoughtChain({
+antDesignXThoughtChainOutput("id")
+renderAntDesignXThoughtChain({
   list(items = list(
     list(key = "1", title = "Search", status = "success",
          content = "Found 5 results", icon = "search")

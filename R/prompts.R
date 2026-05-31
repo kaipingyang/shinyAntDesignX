@@ -6,7 +6,7 @@
 #' @param width,height CSS dimensions.
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
-shinyPromptsOutput <- function(outputId, width = "100%", height = "auto", ...) {
+antDesignXPromptsOutput <- function(outputId, width = "100%", height = "auto", ...) {
   htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "prompts",
     width = width, height = height, package = "shinyAntDesignX", ...)
 }
@@ -17,10 +17,10 @@ shinyPromptsOutput <- function(outputId, width = "100%", height = "auto", ...) {
 #'   `title` (string), `vertical` (logical), `wrap` (logical).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderShinyPrompts <- function(expr, env = parent.frame(), quoted = FALSE) {
+renderAntDesignXPrompts <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
   htmlwidgets::shinyRenderWidget(
     expr           = bquote(htmlwidgets::createWidget(
                        name = "prompts", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = shinyPromptsOutput, env = baseenv(), quoted = TRUE)
+    outputFunction = antDesignXPromptsOutput, env = baseenv(), quoted = TRUE)
 }

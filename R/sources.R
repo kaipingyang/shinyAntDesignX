@@ -6,7 +6,7 @@
 #' @param width,height CSS dimensions.
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
-shinySourcesOutput <- function(outputId, width = "100%", height = "auto", ...) {
+antDesignXSourcesOutput <- function(outputId, width = "100%", height = "auto", ...) {
   htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "sources",
     width = width, height = height, package = "shinyAntDesignX", ...)
 }
@@ -21,10 +21,10 @@ shinySourcesOutput <- function(outputId, width = "100%", height = "auto", ...) {
 #'   * `inline` — logical, inline citation mode (default `FALSE`).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderShinySources <- function(expr, env = parent.frame(), quoted = FALSE) {
+renderAntDesignXSources <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
   htmlwidgets::shinyRenderWidget(
     expr           = bquote(htmlwidgets::createWidget(
                        name = "sources", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = shinySourcesOutput, env = baseenv(), quoted = TRUE)
+    outputFunction = antDesignXSourcesOutput, env = baseenv(), quoted = TRUE)
 }

@@ -5,34 +5,34 @@ devtools::load_all(here::here())
 ui <- page_fluid(
   h2("shinyAntDesignX — 全组件演示"),
 
-  hr(), h3("Welcome"), shinyWelcomeOutput("w1", height = "auto"),
-  hr(), h3("Prompts (点击触发 input$prompts1)"), shinyPromptsOutput("prompts1", height = "auto"),
-  hr(), h3("XMarkdown"), shinyXMarkdownOutput("md1", height = "auto"),
-  hr(), h3("BubbleList"), shinyBubbleListOutput("bl1", height = "300px"),
-  hr(), h3("ThoughtChain"), shinyThoughtChainOutput("tc1", height = "auto"),
-  hr(), h3("Think"), shinyThinkOutput("think1", height = "auto"),
-  hr(), h3("CodeHighlighter"), shinyCodeHighlighterOutput("code1", height = "auto"),
-  hr(), h3("Mermaid"), shinyMermaidOutput("mermaid1", height = "350px"),
-  hr(), h3("Actions (点击触发 input$actions1)"), shinyActionsOutput("actions1", height = "auto"),
-  hr(), h3("Sources"), shinySourcesOutput("sources1", height = "auto"),
-  hr(), h3("FileCard"), shinyFileCardOutput("fc1", height = "auto"),
-  hr(), h3("Folder"), shinyFolderOutput("folder1", height = "400px"),
-  hr(), h3("Conversations (点击触发 input$conv1)"), shinyConversationsOutput("conv1", height = "300px"),
-  hr(), h3("Sender (发送触发 input$sender1)"), shinySenderOutput("sender1", height = "auto"),
+  hr(), h3("Welcome"), antDesignXWelcomeOutput("w1", height = "auto"),
+  hr(), h3("Prompts (点击触发 input$prompts1)"), antDesignXPromptsOutput("prompts1", height = "auto"),
+  hr(), h3("XMarkdown"), antDesignXMarkdownOutput("md1", height = "auto"),
+  hr(), h3("BubbleList"), antDesignXBubbleListOutput("bl1", height = "300px"),
+  hr(), h3("ThoughtChain"), antDesignXThoughtChainOutput("tc1", height = "auto"),
+  hr(), h3("Think"), antDesignXThinkOutput("think1", height = "auto"),
+  hr(), h3("CodeHighlighter"), antDesignXCodeHighlighterOutput("code1", height = "auto"),
+  hr(), h3("Mermaid"), antDesignXMermaidOutput("mermaid1", height = "350px"),
+  hr(), h3("Actions (点击触发 input$actions1)"), antDesignXActionsOutput("actions1", height = "auto"),
+  hr(), h3("Sources"), antDesignXSourcesOutput("sources1", height = "auto"),
+  hr(), h3("FileCard"), antDesignXFileCardOutput("fc1", height = "auto"),
+  hr(), h3("Folder"), antDesignXFolderOutput("folder1", height = "400px"),
+  hr(), h3("Conversations (点击触发 input$conv1)"), antDesignXConversationsOutput("conv1", height = "300px"),
+  hr(), h3("Sender (发送触发 input$sender1)"), antDesignXSenderOutput("sender1", height = "auto"),
 
   # ── New widgets ───────────────────────────────────────────────────────────
   hr(), h3("Attachments (上传后触发 input$att1)"),
-  shinyAttachmentsOutput("att1", height = "200px"),
+  antDesignXAttachmentsOutput("att1", height = "200px"),
 
   hr(), h3("Suggestion (输入 / 触发补全，选中触发 input$sug1)"),
-  shinySuggestionOutput("sug1", height = "auto"),
+  antDesignXSuggestionOutput("sug1", height = "auto"),
 
   hr(), h3("XCard (点击按钮触发 input$card1)"),
-  shinyXCardOutput("card1", height = "auto"),
+  antDesignXCardOutput("card1", height = "auto"),
 
   hr(), h3("Notification (点击按钮触发浏览器通知)"),
   actionButton("fire_notif", "发送浏览器通知", class = "btn-primary"),
-  shinyNotificationOutput("notif1"),
+  antDesignXNotificationOutput("notif1"),
 
   hr(),
   h4("Sender 输入值:"),    verbatimTextOutput("sender_val"),
@@ -46,11 +46,11 @@ ui <- page_fluid(
 
 server <- function(input, output, session) {
 
-  output$w1 <- renderShinyWelcome({
+  output$w1 <- renderAntDesignXWelcome({
     list(title = "shinyAntDesignX", description = "全组件演示 — Ant Design X for R Shiny")
   })
 
-  output$prompts1 <- renderShinyPrompts({
+  output$prompts1 <- renderAntDesignXPrompts({
     list(
       inputId = "prompts1",
       title = "推荐问题",
@@ -63,14 +63,14 @@ server <- function(input, output, session) {
     )
   })
 
-  output$md1 <- renderShinyXMarkdown({
+  output$md1 <- renderAntDesignXMarkdown({
     list(
       content = "# XMarkdown 渲染示例\n\n支持 **粗体**、_斜体_、`inline code`\n\n```python\ndef hello():\n    return 'Hello, Shiny!'\n```\n\n| 组件 | 状态 |\n|------|------|\n| XMarkdown | ✅ |\n| BubbleList | ✅ |\n| ThoughtChain | ✅ |",
       streaming = FALSE
     )
   })
 
-  output$bl1 <- renderShinyBubbleList({
+  output$bl1 <- renderAntDesignXBubbleList({
     list(
       items = list(
         list(key = "1", role = "user", content = "帮我分析一下销售数据"),
@@ -82,7 +82,7 @@ server <- function(input, output, session) {
     )
   })
 
-  output$tc1 <- renderShinyThoughtChain({
+  output$tc1 <- renderAntDesignXThoughtChain({
     list(
       items = list(
         list(key = "1", title = "数据库查询", status = "success", icon = "database",
@@ -94,7 +94,7 @@ server <- function(input, output, session) {
     )
   })
 
-  output$think1 <- renderShinyThink({
+  output$think1 <- renderAntDesignXThink({
     list(
       content = "用户想要了解销售数据分析。我需要：\n1. 查询数据库获取最新数据\n2. 按地区分组汇总\n3. 计算同比增长率\n4. 生成可视化报告",
       title = "推理过程",
@@ -103,21 +103,21 @@ server <- function(input, output, session) {
     )
   })
 
-  output$code1 <- renderShinyCodeHighlighter({
+  output$code1 <- renderAntDesignXCodeHighlighter({
     list(
-      code = "output$tc <- renderShinyThoughtChain({\n  list(items = list(\n    list(key = '1', title = 'Search',\n         status = 'success', icon = 'search',\n         content = 'Found 42 results')\n  ))\n})",
+      code = "output$tc <- renderAntDesignXThoughtChain({\n  list(items = list(\n    list(key = '1', title = 'Search',\n         status = 'success', icon = 'search',\n         content = 'Found 42 results')\n  ))\n})",
       lang = "r",
       showHeader = TRUE
     )
   })
 
-  output$mermaid1 <- renderShinyMermaid({
+  output$mermaid1 <- renderAntDesignXMermaid({
     list(
       diagram = "graph LR\n  A[用户] -->|发送消息| B[Sender]\n  B --> C{Router}\n  C -->|工具调用| D[ThoughtChain]\n  C -->|直接回复| E[XMarkdown]\n  D --> E\n  E -->|渲染| F[BubbleList]"
     )
   })
 
-  output$actions1 <- renderShinyActions({
+  output$actions1 <- renderAntDesignXActions({
     list(
       inputId = "actions1",
       items = list(
@@ -129,7 +129,7 @@ server <- function(input, output, session) {
     )
   })
 
-  output$sources1 <- renderShinySources({
+  output$sources1 <- renderAntDesignXSources({
     list(
       title = "参考来源",
       items = list(
@@ -150,7 +150,7 @@ server <- function(input, output, session) {
     base64enc::base64encode(file.path(here::here(), "examples/antdesignx-logo.png"))
   )
 
-  output$fc1 <- renderShinyFileCard({
+  output$fc1 <- renderAntDesignXFileCard({
     list(
       items = list(
         list(name = "sales_report.pdf", byte = 2048000, type = "file"),
@@ -160,13 +160,13 @@ server <- function(input, output, session) {
     )
   })
 
-  output$folder1 <- renderShinyFolder({
+  output$folder1 <- renderAntDesignXFolder({
     list(
       inputId = "folder1",
       treeData = list(
         list(title = "R", path = "R", children = list(
           list(title = "xmarkdown.R", path = "R/xmarkdown.R",
-               content = "#' XMarkdown widget\nrenderShinyXMarkdown <- function(expr, ...) {\n  # ...\n}"),
+               content = "#' XMarkdown widget\nrenderAntDesignXMarkdown <- function(expr, ...) {\n  # ...\n}"),
           list(title = "thoughtChain.R", path = "R/thoughtChain.R", content = "# ThoughtChain widget")
         )),
         list(title = "srcjs", path = "srcjs", children = list(
@@ -181,7 +181,7 @@ server <- function(input, output, session) {
     )
   })
 
-  output$conv1 <- renderShinyConversations({
+  output$conv1 <- renderAntDesignXConversations({
     list(
       inputId = "conv1",
       activeKey = "s1",
@@ -194,7 +194,7 @@ server <- function(input, output, session) {
     )
   })
 
-  output$sender1 <- renderShinySender({
+  output$sender1 <- renderAntDesignXSender({
     list(
       inputId = "sender1",
       placeholder = "输入消息后按 Enter 发送…",
@@ -215,7 +215,7 @@ server <- function(input, output, session) {
   })
 
   # ── Attachments ───────────────────────────────────────────────────────────
-  output$att1 <- renderShinyAttachments({
+  output$att1 <- renderAntDesignXAttachments({
     list(
       inputId             = "att1",
       maxCount            = 3,
@@ -227,7 +227,7 @@ server <- function(input, output, session) {
   })
 
   # ── Suggestion ────────────────────────────────────────────────────────────
-  output$sug1 <- renderShinySuggestion({
+  output$sug1 <- renderAntDesignXSuggestion({
     list(
       inputId = "sug1",
       placeholder = "输入 / 触发命令补全",
@@ -241,7 +241,7 @@ server <- function(input, output, session) {
   })
 
   # ── XCard ─────────────────────────────────────────────────────────────────
-  output$card1 <- renderShinyXCard({
+  output$card1 <- renderAntDesignXCard({
     list(
       inputId   = "card1",
       surfaceId = "booking-card",
@@ -278,7 +278,7 @@ server <- function(input, output, session) {
     )
   })
 
-  output$notif1 <- renderShinyNotification({
+  output$notif1 <- renderAntDesignXNotification({
     req(input$fire_notif > 0)
     list(
       inputId           = "notif1",

@@ -6,7 +6,7 @@
 #' @param width,height CSS width and height.
 #' @param ... Additional arguments passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
-shinyCodeHighlighterOutput <- function(outputId, width = "100%", height = "auto", ...) {
+antDesignXCodeHighlighterOutput <- function(outputId, width = "100%", height = "auto", ...) {
   htmlwidgets::shinyWidgetOutput(
     outputId = outputId,
     name     = "codeHighlighter",
@@ -25,12 +25,12 @@ shinyCodeHighlighterOutput <- function(outputId, width = "100%", height = "auto"
 #'   * `showHeader` — logical (default `TRUE`).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderShinyCodeHighlighter <- function(expr, env = parent.frame(), quoted = FALSE) {
+renderAntDesignXCodeHighlighter <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
   htmlwidgets::shinyRenderWidget(
     expr           = bquote(htmlwidgets::createWidget(
                        name = "codeHighlighter", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = shinyCodeHighlighterOutput,
+    outputFunction = antDesignXCodeHighlighterOutput,
     env            = baseenv(),
     quoted         = TRUE
   )

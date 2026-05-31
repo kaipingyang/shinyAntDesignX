@@ -8,7 +8,7 @@
 #' @param width,height CSS dimensions.
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
-shinyXCardOutput <- function(outputId, width = "100%", height = "auto", ...) {
+antDesignXCardOutput <- function(outputId, width = "100%", height = "auto", ...) {
   htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "xCard",
     width = width, height = height, package = "shinyAntDesignX", ...)
 }
@@ -26,12 +26,12 @@ shinyXCardOutput <- function(outputId, width = "100%", height = "auto", ...) {
 #'
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderShinyXCard <- function(expr, env = parent.frame(), quoted = FALSE) {
+renderAntDesignXCard <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
   htmlwidgets::shinyRenderWidget(
     expr           = bquote(htmlwidgets::createWidget(
                        name = "xCard", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = shinyXCardOutput, env = baseenv(), quoted = TRUE)
+    outputFunction = antDesignXCardOutput, env = baseenv(), quoted = TRUE)
 }
 
 #' Build A2UI createSurface command

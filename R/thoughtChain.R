@@ -6,7 +6,7 @@
 #' @param width,height CSS width and height.
 #' @param ... Additional arguments passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
-shinyThoughtChainOutput <- function(outputId, width = "100%", height = "auto", ...) {
+antDesignXThoughtChainOutput <- function(outputId, width = "100%", height = "auto", ...) {
   htmlwidgets::shinyWidgetOutput(
     outputId = outputId,
     name     = "thoughtChain",
@@ -28,12 +28,12 @@ shinyThoughtChainOutput <- function(outputId, width = "100%", height = "auto", .
 #'   * `line` — `"solid"` (default), `"dashed"`, `"dotted"`, or `FALSE`.
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderShinyThoughtChain <- function(expr, env = parent.frame(), quoted = FALSE) {
+renderAntDesignXThoughtChain <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
   htmlwidgets::shinyRenderWidget(
     expr           = bquote(htmlwidgets::createWidget(
                        name = "thoughtChain", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = shinyThoughtChainOutput,
+    outputFunction = antDesignXThoughtChainOutput,
     env            = baseenv(),
     quoted         = TRUE
   )

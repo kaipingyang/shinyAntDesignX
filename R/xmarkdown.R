@@ -7,7 +7,7 @@
 #' @param width,height CSS width and height.
 #' @param ... Additional arguments passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
-shinyXMarkdownOutput <- function(outputId, width = "100%", height = "auto", ...) {
+antDesignXMarkdownOutput <- function(outputId, width = "100%", height = "auto", ...) {
   htmlwidgets::shinyWidgetOutput(
     outputId = outputId,
     name     = "xmarkdown",
@@ -26,12 +26,12 @@ shinyXMarkdownOutput <- function(outputId, width = "100%", height = "auto", ...)
 #'   * `openLinksInNewTab` — logical (default `FALSE`).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderShinyXMarkdown <- function(expr, env = parent.frame(), quoted = FALSE) {
+renderAntDesignXMarkdown <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
   htmlwidgets::shinyRenderWidget(
     expr           = bquote(htmlwidgets::createWidget(
                        name = "xmarkdown", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = shinyXMarkdownOutput,
+    outputFunction = antDesignXMarkdownOutput,
     env            = baseenv(),
     quoted         = TRUE
   )

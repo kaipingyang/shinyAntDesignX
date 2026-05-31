@@ -34,13 +34,13 @@ Three tiers:
 
 | Tier | Widgets | Pattern |
 |------|---------|---------|
-| 1 | `shinyXMarkdown`, `shinyCodeHighlighter`, `shinyMermaid`, `shinyThoughtChain` | Pure display — R passes data, JS renders, no state |
-| 2 | `shinySender` (planned) | Self-contained interactive, emits to `input$` |
-| 3 | `antDesignXOutput` | Full AI chat: bridge.ts + state.ts + streaming + tool calls |
+| 1 | `antDesignXMarkdownOutput`, `antDesignXCodeHighlighterOutput`, `antDesignXMermaidOutput`, `antDesignXThoughtChainOutput` | Pure display — R passes data, JS renders, no state |
+| 2 | `antDesignXSenderOutput` (planned) | Self-contained interactive, emits to `input$` |
+| 3 | `antDesignXOutput` | Full AI chat: bridge.ts + x-sdk + streaming + tool calls |
 
 Each widget has:
 - `srcjs/widgets/<name>/index.tsx` — React component + HTMLWidgets registration
-- `R/<name>.R` — `shiny<Name>Output()` + `renderShiny<Name>()`
+- `R/<name>.R` — `antDesignX<Name>Output()` + `renderAntDesignX<Name>()`
 - `inst/htmlwidgets/<name>.yaml` — dependency declaration
 - `inst/www/<name>.js` — compiled IIFE output
 
@@ -48,9 +48,9 @@ Each widget has:
 
 `srcjs/bridge.ts` — **do not modify**. Handles all Shiny ↔ React messaging: `chunk / done / error / thinking / tool-call / tool-result / sessions / load-thread / clear`.
 
-`srcjs/state.ts` — `useShinyState()` hook. Manages threads, messages, streaming state, localStorage persistence, and server mode. Note: upstream uses `useXChat` + `useXConversations` from `@ant-design/x-sdk`; we hand-rolled equivalents for tighter Shiny integration.
+`srcjs/ShinyBridgeRequest.ts` + `srcjs/ShinyBridgeChatProvider.ts` — x-sdk integration layer. `state.ts` is superseded (kept as reference).
 
-`srcjs/AntDesignX.tsx` — root component. Composes `Conversations + Bubble.List + Sender + ThoughtChain + Dropdown` (slash commands).
+`srcjs/AntDesignX.tsx` — root component. Uses `useXChat` + `useXConversations`, composes `Conversations + Bubble.List + Sender + ThoughtChain + Dropdown` (slash commands).
 
 R server: `antDesignXServer(id, handler, ...)` — handler receives `on_chunk / on_done / on_error / on_tool_call / on_tool_result / on_thinking / is_cancelled / wait_for_approval / register_cancel`.
 
@@ -72,24 +72,24 @@ R server: `antDesignXServer(id, handler, ...)` — handler receives `on_chunk / 
 | Widget | Output fn | Render fn |
 |--------|-----------|-----------|
 | Full chat | `antDesignXOutput` | `renderAntDesignX` / `antDesignXServer` |
-| XMarkdown | `shinyXMarkdownOutput` | `renderShinyXMarkdown` |
-| CodeHighlighter | `shinyCodeHighlighterOutput` | `renderShinyCodeHighlighter` |
-| Mermaid | `shinyMermaidOutput` | `renderShinyMermaid` |
-| ThoughtChain | `shinyThoughtChainOutput` | `renderShinyThoughtChain` |
-| Think | `shinyThinkOutput` | `renderShinyThink` |
-| BubbleList | `shinyBubbleListOutput` | `renderShinyBubbleList` |
-| Sender | `shinySenderOutput` | `renderShinySender` |
-| Attachments | `shinyAttachmentsOutput` | `renderShinyAttachments` |
-| Suggestion | `shinySuggestionOutput` | `renderShinySuggestion` |
-| Actions | `shinyActionsOutput` | `renderShinyActions` |
-| Sources | `shinySourcesOutput` | `renderShinySources` |
-| FileCard | `shinyFileCardOutput` | `renderShinyFileCard` |
-| Folder | `shinyFolderOutput` | `renderShinyFolder` |
-| Conversations | `shinyConversationsOutput` | `renderShinyConversations` |
-| Welcome | `shinyWelcomeOutput` | `renderShinyWelcome` |
-| Prompts | `shinyPromptsOutput` | `renderShinyPrompts` |
-| Notification | `shinyNotificationOutput` | `renderShinyNotification` |
-| XCard | `shinyXCardOutput` | `renderShinyXCard` + `xcard_create_surface()` / `xcard_update_components()` / `xcard_update_data()` |
+| XMarkdown | `antDesignXMarkdownOutput` | `renderAntDesignXMarkdown` |
+| CodeHighlighter | `antDesignXCodeHighlighterOutput` | `renderAntDesignXCodeHighlighter` |
+| Mermaid | `antDesignXMermaidOutput` | `renderAntDesignXMermaid` |
+| ThoughtChain | `antDesignXThoughtChainOutput` | `renderAntDesignXThoughtChain` |
+| Think | `antDesignXThinkOutput` | `renderAntDesignXThink` |
+| BubbleList | `antDesignXBubbleListOutput` | `renderAntDesignXBubbleList` |
+| Sender | `antDesignXSenderOutput` | `renderAntDesignXSender` |
+| Attachments | `antDesignXAttachmentsOutput` | `renderAntDesignXAttachments` |
+| Suggestion | `antDesignXSuggestionOutput` | `renderAntDesignXSuggestion` |
+| Actions | `antDesignXActionsOutput` | `renderAntDesignXActions` |
+| Sources | `antDesignXSourcesOutput` | `renderAntDesignXSources` |
+| FileCard | `antDesignXFileCardOutput` | `renderAntDesignXFileCard` |
+| Folder | `antDesignXFolderOutput` | `renderAntDesignXFolder` |
+| Conversations | `antDesignXConversationsOutput` | `renderAntDesignXConversations` |
+| Welcome | `antDesignXWelcomeOutput` | `renderAntDesignXWelcome` |
+| Prompts | `antDesignXPromptsOutput` | `renderAntDesignXPrompts` |
+| Notification | `antDesignXNotificationOutput` | `renderAntDesignXNotification` |
+| XCard | `antDesignXCardOutput` | `renderAntDesignXCard` + `xcard_create_surface()` / `xcard_update_components()` / `xcard_update_data()` |
 
 ## Reference docs
 
