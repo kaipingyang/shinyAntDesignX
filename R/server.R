@@ -51,6 +51,8 @@
 #' @export
 antDesignXServer <- function(id, handler,
                              show_conversation_list = FALSE,
+                             xcard_mode             = c("inline", "panel"),
+                             xcard_panel_width      = 360L,
                              suggestions            = list(),
                              commands               = list(),
                              tools                  = list(),
@@ -60,7 +62,8 @@ antDesignXServer <- function(id, handler,
                              on_feedback            = NULL,
                              strings                = NULL,
                              assistant_avatar       = list(fallback = "AI")) {
-  force(show_conversation_list); force(suggestions); force(commands)
+  force(show_conversation_list); force(xcard_mode); force(xcard_panel_width)
+  force(suggestions); force(commands)
   force(tools); force(action_items); force(on_action); force(on_session_load)
   force(on_feedback); force(strings); force(assistant_avatar)
   session  <- shiny::getDefaultReactiveDomain()
@@ -68,6 +71,8 @@ antDesignXServer <- function(id, handler,
 
   config <- list(
     show_conversation_list = show_conversation_list,
+    xcard_mode             = match.arg(xcard_mode),
+    xcard_panel_width      = xcard_panel_width,
     suggestions            = suggestions,
     commands               = commands,
     tools                  = tools,
@@ -273,6 +278,12 @@ antDesignXServer <- function(id, handler,
     send_sessions = function(sessions) {
       pending_sessions <<- sessions
       session$sendCustomMessage(paste0(input_id, ":sessions"), sessions)
+    },
+    send_card_command = function(command, thread_id = "default") {
+      session$sendCustomMessage(
+        paste0(input_id, ":card-command"),
+        list(command = command, threadId = thread_id)
+      )
     }
   ))
 }

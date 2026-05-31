@@ -15,12 +15,13 @@ export interface ShinyInput {
 
 // Each SSE-like chunk coming back from R
 export type ShinyChunk =
-  | { type: "chunk";       text: string }
-  | { type: "thinking";    text: string }
-  | { type: "tool-call";   toolCallId: string; toolName: string; args: Record<string, unknown>; argsText: string; annotations?: Record<string, unknown> }
-  | { type: "tool-result"; toolCallId: string; result: unknown; isError: boolean }
+  | { type: "chunk";        text: string }
+  | { type: "thinking";     text: string }
+  | { type: "tool-call";    toolCallId: string; toolName: string; args: Record<string, unknown>; argsText: string; annotations?: Record<string, unknown> }
+  | { type: "tool-result";  toolCallId: string; result: unknown; isError: boolean }
+  | { type: "card-command"; command: Record<string, unknown> }
   | { type: "done" }
-  | { type: "error";       message: string };
+  | { type: "error";        message: string };
 
 // ── ShinyBridgeRequest ────────────────────────────────────────────────────────
 

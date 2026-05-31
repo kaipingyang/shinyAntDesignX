@@ -50,12 +50,14 @@ export interface ShinyBridge {
   onClear: (handler: () => void) => void;
   onSessions: (handler: (data: { sessions: SessionItem[] }) => void) => void;
   onLoadThread: (handler: (data: { threadId: string; messages: unknown[] }) => void) => void;
+  onCardCommand: (handler: (data: { command: Record<string, unknown>; threadId: string }) => void) => void;
 }
 
 export function createShinyBridge(inputId: string): ShinyBridge {
   let currentCallbacks: RunCallbacks | null = null;
   let sessionsHandler: ((data: { sessions: SessionItem[] }) => void) | null = null;
   let loadThreadHandler: ((data: { threadId: string; messages: unknown[] }) => void) | null = null;
+  let cardCommandHandler: ((data: { command: Record<string, unknown>; threadId: string }) => void) | null = null;
   // `:sessions` 可能在 useEffect 注册 handler 前到达（Shiny 首次 flush 早于 React paint）
   // 缓冲最后一条，onSessions() 注册时立即回放
   let bufferedSessions: { sessions: SessionItem[] } | null = null;
@@ -103,6 +105,11 @@ export function createShinyBridge(inputId: string): ShinyBridge {
 
   Shiny.addCustomMessageHandler(`${inputId}:load-thread`, (data) => {
     loadThreadHandler?.(data as { threadId: string; messages: unknown[] });
+  });
+
+  Shiny.addCustomMessageHandler(`${inputId}:card-command`, (data) => {
+    const d = data as { command: Record<string, unknown>; threadId: string };
+    cardCommandHandler?.(d);
   });
 
   return {
@@ -188,6 +195,10 @@ export function createShinyBridge(inputId: string): ShinyBridge {
 
     onLoadThread(handler) {
       loadThreadHandler = handler;
+    },
+
+    onCardCommand(handler) {
+      cardCommandHandler = handler;
     },
   };
 }

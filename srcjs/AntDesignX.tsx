@@ -6,6 +6,8 @@ import XMarkdown from "@ant-design/x-markdown";
 import "@ant-design/x-markdown/themes/light.css";
 import { useXChat, useXConversations } from "@ant-design/x-sdk";
 import type { MessageInfo } from "@ant-design/x-sdk";
+import { XCard } from "@ant-design/x-card";
+import type { XAgentCommand_v0_9, ActionPayload } from "@ant-design/x-card";
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -258,6 +260,16 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   const setMessagesRef = useRef(setMessages);
   setMessagesRef.current = setMessages;
 
+  // ── xCard config ──────────────────────────────────────────────────────────
+  const xcardMode = config.xcard_mode ?? "inline";
+  const xcardPanelWidth = config.xcard_panel_width ?? 360;
+
+  // ── xCard command queues (surfaceId → accumulated commands) ───────────────
+  // XCard.Box processes commands array with processedCommandsCount — append-only
+  const [cardCommandQueues, setCardCommandQueues] = useState<Map<string, XAgentCommand_v0_9[]>>(
+    () => new Map()
+  );
+
   // ── tool-result side-channel ──────────────────────────────────────────────
   // transformMessage passes through "tool-result" chunks (returns base unchanged).
   // ShinyBridgeRequest calls __toolResultHook instead so we can scan all messages
@@ -401,6 +413,37 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
       setActiveConversationKey(newId);
     });
 
+    // card-command: append to surfaceId queue AND fire onUpdate so transformMessage
+    // can track cardSurfaceIds (for inline rendering)
+    bridge.onCardCommand(({ command, threadId }: { command: Record<string, unknown>; threadId: string }) => {
+      // update cardCommandQueues
+      const surfaceId: string | null =
+        "createSurface"   in command ? (command as any).createSurface?.surfaceId   ?? null :
+        "updateComponents" in command ? (command as any).updateComponents?.surfaceId ?? null :
+        "updateDataModel"  in command ? (command as any).updateDataModel?.surfaceId  ?? null :
+        "deleteSurface"    in command ? (command as any).deleteSurface?.surfaceId    ?? null :
+        null;
+
+      if (surfaceId) {
+        setCardCommandQueues((prev) => {
+          const next = new Map(prev);
+          if ("deleteSurface" in command) {
+            next.delete(surfaceId);
+          } else {
+            next.set(surfaceId, [...(next.get(surfaceId) ?? []), command as XAgentCommand_v0_9]);
+          }
+          return next;
+        });
+      }
+
+      // also fire onUpdate on the request so transformMessage tracks cardSurfaceIds
+      // (only relevant during an active run for the current thread)
+      request.options.callbacks?.onUpdate?.(
+        { type: "card-command", command },
+        new Headers()
+      );
+    });
+
     bridge.sendReady();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -424,6 +467,31 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   const showConversations = config.show_conversation_list === true;
   const showWelcome = messages.length === 0 && !isRequesting;
   const avatarConfig = config.assistant_avatar ?? { fallback: "AI" };
+
+  // ── xCard derived state ───────────────────────────────────────────────────
+  // Flatten all surface queues into one array for XCard.Box
+  const allCardCommands = useMemo(() => {
+    const result: XAgentCommand_v0_9[] = [];
+    cardCommandQueues.forEach((cmds) => result.push(...cmds));
+    return result;
+  }, [cardCommandQueues]);
+
+  // Collect all active surfaceIds across all messages (for panel mode and XCard.Box awareness)
+  const activeSurfaceIds = useMemo(() => {
+    const ids: string[] = [];
+    messages.forEach(({ message }) => {
+      message.cardSurfaceIds?.forEach((id) => { if (!ids.includes(id)) ids.push(id); });
+    });
+    return ids;
+  }, [messages]);
+
+  const handleCardAction = useCallback((payload: ActionPayload) => {
+    (window as any).Shiny?.setInputValue(
+      `${inputId}_card_action`,
+      { name: payload.name, surfaceId: payload.surfaceId, context: payload.context, ts: Date.now() },
+      { priority: "event" }
+    );
+  }, [inputId]);
 
   // ── file attachment ───────────────────────────────────────────────────────
   const handlePasteFile = useCallback((files: FileList) => {
@@ -460,7 +528,12 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
         key: id,
         role: "assistant",
         content: (
-          <AssistantContent msg={message} isStreaming={isStreaming} onApprove={sendToolApproval} />
+          <div>
+            <AssistantContent msg={message} isStreaming={isStreaming} onApprove={sendToolApproval} />
+            {xcardMode === "inline" && message.cardSurfaceIds?.map((surfaceId) => (
+              <XCard.Card key={surfaceId} id={surfaceId} />
+            ))}
+          </div>
         ),
         typing: isStreaming && message.textContent.length > 0
           ? { effect: "typing" as const, step: 2, interval: 50 } : false,
@@ -536,7 +609,9 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   // ── render ────────────────────────────────────────────────────────────────
   return (
     <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm }}>
-      <div style={{ display: "flex", height: "100%", fontFamily: "inherit", overflow: "hidden" }}>
+      {/* XCard.Box wraps the whole widget so XCard.Card instances inside bubbles can find their context */}
+      <XCard.Box commands={allCardCommands} onAction={handleCardAction}>
+        <div style={{ display: "flex", height: "100%", fontFamily: "inherit", overflow: "hidden" }}>
 
         {showConversations && (
           <div style={{ width: 220, flexShrink: 0, borderRight: "1px solid #f0f0f0", overflow: "auto" }}>
@@ -630,7 +705,26 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
             </Dropdown>
           </div>
         </div>
+
+        {/* Panel mode: right-side card area, shown when at least one surface exists */}
+        {xcardMode === "panel" && activeSurfaceIds.length > 0 && (
+          <div style={{
+            width: xcardPanelWidth,
+            flexShrink: 0,
+            borderLeft: "1px solid #f0f0f0",
+            overflowY: "auto",
+            padding: "12px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+          }}>
+            {activeSurfaceIds.map((surfaceId) => (
+              <XCard.Card key={surfaceId} id={surfaceId} />
+            ))}
+          </div>
+        )}
       </div>
+      </XCard.Box>
     </ConfigProvider>
   );
 }

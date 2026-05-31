@@ -19,6 +19,7 @@ export interface ShinyMessage {
   reasoningContent?: string;
   toolCalls: ToolCallState[];
   attachments?: import("./bridge").AttachmentData[];
+  cardSurfaceIds?: string[];  // XCard surfaces embedded in this message (inline mode)
 }
 
 // ── provider ──────────────────────────────────────────────────────────────────
@@ -80,6 +81,22 @@ export class ShinyBridgeChatProvider extends AbstractChatProvider<
           status:      "loading",
         };
         return { ...base, toolCalls: [...base.toolCalls, newTc] };
+      }
+
+      case "card-command": {
+        // Track surfaceId when a createSurface command arrives so inline rendering knows
+        // which XCard.Card to embed in this message bubble
+        const cmd = chunk.command;
+        if ("createSurface" in cmd) {
+          const surfaceId = (cmd as { createSurface: { surfaceId?: string } }).createSurface?.surfaceId;
+          if (surfaceId) {
+            const existing = base.cardSurfaceIds ?? [];
+            if (!existing.includes(surfaceId)) {
+              return { ...base, cardSurfaceIds: [...existing, surfaceId] };
+            }
+          }
+        }
+        return base;
       }
 
       // tool-result is applied via setMessages() scan in AntDesignX.tsx;

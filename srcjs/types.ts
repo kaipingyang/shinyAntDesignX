@@ -23,4 +23,6 @@ export interface WidgetConfig {
   action_items?:  Array<{ section: string; id: string; label: string; description?: string }>;
   strings?:       Record<string, unknown>;
   assistant_avatar?: { fallback?: string; src?: string; alt?: string };
+  xcard_mode?:    "inline" | "panel";  // default: "inline"
+  xcard_panel_width?: number;           // panel mode width px, default: 360
 }
