@@ -42,6 +42,12 @@ export const SHINY_DEFAULT_CATALOG: Catalog = {
         color: { type: "string" },
       },
     },
+    Container: {
+      props: {
+        gap:     { type: "number" },
+        padding: { type: "string" },
+      },
+    },
   },
 };
 
@@ -84,4 +90,8 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     </div>
   ),
   Tag: ({ text, color }: any) => <Tag color={color}>{text}</Tag>,
+  // Container: generic flex column wrapper, used as root node to hold children
+  Container: ({ children, gap = 8, padding = "0" }: { children?: React.ReactNode; gap?: number; padding?: string }) => (
+    <div style={{ display: "flex", flexDirection: "column", gap, padding }}>{children}</div>
+  ),
 };

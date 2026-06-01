@@ -69,7 +69,13 @@ server <- function(input, output, session) {
                action    = list(event = list(
                  name    = "form:submit",
                  context = list(type = list(path = "/form/type"))
-               )))
+               ))),
+          # root node required — transform() returns null without it
+          # Container renders children in a flex column
+          list(id = "root",
+               component = "Container",
+               gap       = 8L,
+               children  = list("title", "desc", "name", "type", "submit"))
         )),
         thread_id = thread_id
       )
@@ -80,7 +86,7 @@ server <- function(input, output, session) {
         thread_id = thread_id
       )
 
-      on_chunk("卡片已生成，请填写并点击"确认提交"。")
+      on_chunk('卡片已生成，请填写并点击"确认提交"。')
       on_done()
     }
   )
