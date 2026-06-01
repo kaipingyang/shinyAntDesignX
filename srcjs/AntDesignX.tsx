@@ -264,6 +264,9 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   const setMessagesRef = useRef(setMessages);
   setMessagesRef.current = setMessages;
 
+  const onRequestRef = useRef(onRequest);
+  onRequestRef.current = onRequest;
+
   // ── xCard config ──────────────────────────────────────────────────────────
   const xcardMode = config.xcard_mode ?? "inline";
   const xcardPanelWidth = config.xcard_panel_width ?? 360;
@@ -446,6 +449,15 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
         { type: "card-command", command },
         new Headers()
       );
+    });
+
+    // trigger-message: R can programmatically inject a new user message
+    bridge.onTriggerMessage(({ text, threadId }: { text: string; threadId: string }) => {
+      const target = threadId || activeKeyRef.current;
+      if (threadId && threadId !== activeKeyRef.current) {
+        setActiveConversationKey(threadId);
+      }
+      onRequestRef.current({ query: text, threadId: target });
     });
 
     bridge.sendReady();

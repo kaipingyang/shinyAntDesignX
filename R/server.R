@@ -47,7 +47,10 @@
 #' @param assistant_avatar Named list with `fallback`, `src`, `alt` fields.
 #'
 #' @return A list with `clear()`, `send_tool_call()`, `send_tool_result()`,
-#'   and `send_sessions()` functions.
+#'   `send_sessions()`, `send_card_command(command, thread_id)`, and
+#'   `trigger_message(text, thread_id)` functions.
+#'   `trigger_message()` programmatically injects a user message into the chat,
+#'   triggering the handler as if the user had typed and submitted it.
 #' @export
 antDesignXServer <- function(id, handler,
                              show_conversation_list = FALSE,
@@ -283,6 +286,12 @@ antDesignXServer <- function(id, handler,
       session$sendCustomMessage(
         paste0(input_id, ":card-command"),
         list(command = command, threadId = thread_id)
+      )
+    },
+    trigger_message = function(text, thread_id = "default") {
+      session$sendCustomMessage(
+        paste0(input_id, ":trigger-message"),
+        list(text = text, threadId = thread_id)
       )
     }
   ))
