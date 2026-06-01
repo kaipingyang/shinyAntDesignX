@@ -6,8 +6,12 @@ import XMarkdown from "@ant-design/x-markdown";
 import "@ant-design/x-markdown/themes/light.css";
 import { useXChat, useXConversations } from "@ant-design/x-sdk";
 import type { MessageInfo } from "@ant-design/x-sdk";
-import { XCard } from "@ant-design/x-card";
+import { XCard, registerCatalog } from "@ant-design/x-card";
 import type { XAgentCommand_v0_9, ActionPayload } from "@ant-design/x-card";
+import { SHINY_DEFAULT_CATALOG, SHINY_DEFAULT_COMPONENTS } from "./xCardDefaults";
+
+// Register default catalog once at module load
+registerCatalog(SHINY_DEFAULT_CATALOG);
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -610,7 +614,7 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   return (
     <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm }}>
       {/* XCard.Box wraps the whole widget so XCard.Card instances inside bubbles can find their context */}
-      <XCard.Box commands={allCardCommands} onAction={handleCardAction}>
+      <XCard.Box commands={allCardCommands} onAction={handleCardAction} components={SHINY_DEFAULT_COMPONENTS}>
         <div style={{ display: "flex", height: "100%", fontFamily: "inherit", overflow: "hidden" }}>
 
         {showConversations && (
