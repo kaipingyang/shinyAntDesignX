@@ -1,215 +1,24 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { theme as antdTheme, Avatar, ConfigProvider, Dropdown } from "antd";
-import { Bubble, Conversations, Sender, ThoughtChain, Think, Welcome, Prompts } from "@ant-design/x";
+import { Bubble, Conversations, Sender, Welcome, Prompts } from "@ant-design/x";
 import type { BubbleProps, ConversationsProps } from "@ant-design/x";
-import XMarkdown from "@ant-design/x-markdown";
 import "@ant-design/x-markdown/themes/light.css";
 import { useXChat, useXConversations } from "@ant-design/x-sdk";
 import type { MessageInfo } from "@ant-design/x-sdk";
 import { XCard, registerCatalog } from "@ant-design/x-card";
 import type { XAgentCommand_v0_9, ActionPayload } from "@ant-design/x-card";
 import { SHINY_DEFAULT_CATALOG, SHINY_DEFAULT_COMPONENTS } from "./xCardDefaults";
-
-// Register default catalog once at module load
-registerCatalog(SHINY_DEFAULT_CATALOG);
-import {
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  LoadingOutlined,
-  StopOutlined,
-  SearchOutlined,
-  DatabaseOutlined,
-  CodeOutlined,
-  GlobalOutlined,
-  ThunderboltOutlined,
-  CodeSandboxOutlined,
-  ExperimentOutlined,
-  ToolOutlined,
-  BulbOutlined,
-  SafetyOutlined,
-} from "@ant-design/icons";
 import { ShinyBridgeRequest } from "./ShinyBridgeRequest";
 import { createShinyProvider } from "./ShinyBridgeChatProvider";
 import type { ShinyMessage } from "./ShinyBridgeChatProvider";
 import type { ShinyInput } from "./ShinyBridgeRequest";
-import type { ToolCallState, WidgetConfig } from "./types";
+import type { WidgetConfig } from "./types";
 import type { SessionItem, AttachmentData } from "./bridge";
+import { useToolSideChannel } from "./hooks/useToolSideChannel";
+import { AssistantContent } from "./components/AssistantContent";
 
-// ── Icon mapping ──────────────────────────────────────────────────────────────
-const TOOL_ICONS: Record<string, React.ReactNode> = {
-  "search":   <SearchOutlined />,
-  "database": <DatabaseOutlined />,
-  "code":     <CodeOutlined />,
-  "globe":    <GlobalOutlined />,
-  "zap":      <ThunderboltOutlined />,
-  "terminal": <CodeSandboxOutlined />,
-  "flask":    <ExperimentOutlined />,
-  "wrench":   <ToolOutlined />,
-  "bulb":     <BulbOutlined />,
-  "shield":   <SafetyOutlined />,
-};
-
-// ── Tool result renderer ──────────────────────────────────────────────────────
-function TableResult({ data }: { data: unknown }) {
-  let rows: Record<string, unknown>[];
-  try {
-    const parsed = typeof data === "string" ? JSON.parse(data) : data;
-    if (!Array.isArray(parsed) || parsed.length === 0 || typeof parsed[0] !== "object")
-      throw new Error("not a table");
-    rows = parsed as Record<string, unknown>[];
-  } catch {
-    return <pre style={{ margin: 0, fontSize: "12px", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{String(data)}</pre>;
-  }
-  const columns = Object.keys(rows[0]);
-  return (
-    <div style={{ overflowX: "auto", maxHeight: "240px", overflowY: "auto", borderRadius: "4px", border: "1px solid #e5e7eb" }}>
-      <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "12px" }}>
-        <thead>
-          <tr>
-            {columns.map((col) => (
-              <th key={col} style={{ border: "1px solid #e5e7eb", padding: "4px 8px", background: "#f9fafb", fontWeight: 600, textAlign: "left", position: "sticky", top: 0, whiteSpace: "nowrap" }}>{col}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, ri) => (
-            <tr key={ri} style={{ background: ri % 2 === 0 ? "white" : "#f9fafb" }}>
-              {columns.map((col) => (
-                <td key={col} style={{ border: "1px solid #e5e7eb", padding: "4px 8px", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{String(row[col] ?? "")}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function ToolResultContent({ tc }: { tc: ToolCallState }) {
-  const ann = tc.annotations ?? {};
-  const resultType = (ann.resultType as string | undefined) ?? "auto";
-  const result = tc.result;
-  const display = typeof result === "string" ? result : JSON.stringify(result, null, 2);
-  if (tc.isError) {
-    return <pre style={{ margin: 0, fontSize: "12px", color: "#991b1b", background: "rgba(220,38,38,0.06)", padding: "6px 8px", borderRadius: "4px", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{display}</pre>;
-  }
-  switch (resultType) {
-    case "table":    return <TableResult data={result} />;
-    case "markdown": return <div style={{ fontSize: "13px", lineHeight: 1.6 }}>{display}</div>;
-    case "image":    return <img src={display} alt="result" style={{ maxWidth: "100%", borderRadius: "4px" }} />;
-    case "html":     return <div style={{ fontSize: "13px" }} dangerouslySetInnerHTML={{ __html: display }} />;
-    case "file": {
-      const filename = (ann.resultFilename as string | undefined) ?? "download";
-      return <a href={display} download={filename} style={{ fontSize: "12px", color: "#1677ff" }}>⬇ {filename}</a>;
-    }
-    default:
-      return <pre style={{ margin: 0, fontSize: "12px", background: "rgba(0,0,0,0.04)", padding: "6px 8px", borderRadius: "4px", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{display}</pre>;
-  }
-}
-
-// ── ThoughtChain builder ──────────────────────────────────────────────────────
-function buildThoughtChainItems(
-  toolCalls: ToolCallState[],
-  onApprove: (id: string, approved: boolean) => void,
-) {
-  return toolCalls.map((tc) => {
-    const ann = tc.annotations ?? {};
-    const title = (ann.title as string | undefined) ?? tc.toolName;
-    const iconName = ann.icon as string | undefined;
-    const requiresApproval = ann.requiresApproval === true;
-    const awaiting = tc.status === "loading" && requiresApproval;
-    const icon = awaiting ? <SafetyOutlined style={{ color: "#d97706" }} />
-      : tc.status === "loading" ? <LoadingOutlined style={{ color: "#9ca3af" }} />
-      : tc.status === "success" ? <CheckCircleOutlined style={{ color: "#16a34a" }} />
-      : tc.status === "error"   ? <CloseCircleOutlined style={{ color: "#dc2626" }} />
-      : <StopOutlined style={{ color: "#6b7280" }} />;
-    const footer = awaiting ? (
-      <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-        <button onClick={() => onApprove(tc.toolCallId, true)} style={{ padding: "4px 14px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "none", background: "#16a34a", color: "#fff" }}>Approve</button>
-        <button onClick={() => onApprove(tc.toolCallId, false)} style={{ padding: "4px 14px", borderRadius: "5px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "none", background: "#6b7280", color: "#fff" }}>Deny</button>
-      </div>
-    ) : undefined;
-    const argsDisplay = typeof tc.argsText === "string" ? tc.argsText : JSON.stringify(tc.args, null, 2);
-    const content = (
-      <div>
-        <div style={{ color: "#9ca3af", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Arguments</div>
-        <pre style={{ margin: 0, padding: "6px 8px", borderRadius: "4px", background: "rgba(0,0,0,0.04)", fontSize: "12px", overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{argsDisplay}</pre>
-        {tc.result !== undefined && (
-          <>
-            <div style={{ color: "#9ca3af", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", marginTop: "10px", marginBottom: "4px" }}>Result</div>
-            <ToolResultContent tc={tc} />
-          </>
-        )}
-      </div>
-    );
-    return {
-      key: tc.toolCallId,
-      title,
-      icon: iconName && TOOL_ICONS[iconName] ? React.cloneElement(TOOL_ICONS[iconName] as React.ReactElement) : icon,
-      status: tc.status,
-      collapsible: true,
-      blink: tc.status === "loading",
-      content,
-      footer,
-    };
-  });
-}
-
-// ── AssistantContent ──────────────────────────────────────────────────────────
-function AssistantContent({
-  msg,
-  isStreaming,
-  onApprove,
-}: {
-  msg: ShinyMessage;
-  isStreaming: boolean;
-  onApprove: (id: string, approved: boolean) => void;
-}) {
-  const thoughtItems = useMemo(
-    () => buildThoughtChainItems(msg.toolCalls, onApprove),
-    [msg.toolCalls, onApprove]
-  );
-
-  // XMarkdown requires an explicit {hasNextChunk: false} frame to flush
-  // incomplete syntax placeholders. Track whether we just finished streaming.
-  const prevStreamingRef = useRef(isStreaming);
-  const [justFinished, setJustFinished] = useState(false);
-  useEffect(() => {
-    if (prevStreamingRef.current && !isStreaming) {
-      setJustFinished(true);
-      const t = setTimeout(() => setJustFinished(false), 0);
-      return () => clearTimeout(t);
-    }
-    prevStreamingRef.current = isStreaming;
-  }, [isStreaming]);
-
-  const streamingProp = isStreaming
-    ? { hasNextChunk: true as const, enableAnimation: true, tail: msg.toolCalls.every(tc => tc.status !== "loading") }
-    : justFinished
-    ? { hasNextChunk: false as const }
-    : undefined;
-  return (
-    <div>
-      {msg.reasoningContent && (
-        <Think loading={isStreaming} blink={isStreaming} defaultExpanded={false} style={{ marginBottom: 8 }}>
-          {msg.reasoningContent}
-        </Think>
-      )}
-      {msg.toolCalls.length > 0 && (
-        <ThoughtChain items={thoughtItems} style={{ marginBottom: msg.textContent ? 12 : 0 }} />
-      )}
-      {msg.textContent && (
-        <XMarkdown
-          content={msg.textContent}
-          streaming={streamingProp}
-        />
-      )}
-      {isStreaming && !msg.textContent && msg.toolCalls.length === 0 && !msg.reasoningContent && (
-        <span style={{ color: "#9ca3af", fontSize: "13px" }}>Thinking…</span>
-      )}
-    </div>
-  );
-}
+// Register default catalog once at module load
+registerCatalog(SHINY_DEFAULT_CATALOG);
 
 // ── Main component ────────────────────────────────────────────────────────────
 interface AntDesignXProps {
@@ -243,7 +52,7 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   });
 
   // ── useXChat ──────────────────────────────────────────────────────────────
-  const { messages, onRequest, isRequesting, abort, setMessages, onReload } = useXChat<
+  const { messages, onRequest, isRequesting, abort, setMessages, onReload, queueRequest } = useXChat<
     ShinyMessage,
     ShinyMessage,
     ShinyInput
@@ -271,65 +80,18 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   const xcardMode = config.xcard_mode ?? "inline";
   const xcardPanelWidth = config.xcard_panel_width ?? 360;
 
-  // ── xCard command queues (surfaceId → accumulated commands) ───────────────
-  // XCard.Box processes commands array with processedCommandsCount — append-only
-  const [cardCommandQueues, setCardCommandQueues] = useState<Map<string, XAgentCommand_v0_9[]>>(
-    () => new Map()
-  );
+  // ── xCard command queue (single append-only array for XCard.Box) ──────────
+  // XCard.Box tracks processedCommandsCount — the array must be append-only and
+  // never reordered or rebuilt from a per-surface Map, which would corrupt the
+  // count and cause duplicate / skipped command processing.
+  const cardCommandQueueRef = useRef<XAgentCommand_v0_9[]>([]);
+  const [cardCommandVersion, setCardCommandVersion] = useState(0);
 
-  // ── tool-result side-channel ──────────────────────────────────────────────
-  // transformMessage passes through "tool-result" chunks (returns base unchanged).
-  // ShinyBridgeRequest calls __toolResultHook instead so we can scan all messages
-  // synchronously — no async useEffect needed, no map/index required.
-  const toolResultHandlerRef = useRef<((toolCallId: string, result: unknown, isError: boolean) => void) | null>(null);
-  toolResultHandlerRef.current = (toolCallId, result, isError) => {
-    setMessagesRef.current((all) =>
-      all.map((mi) => {
-        if (mi.message.role !== "assistant") return mi;
-        if (!mi.message.toolCalls.some((tc) => tc.toolCallId === toolCallId)) return mi;
-        return {
-          ...mi,
-          message: {
-            ...mi.message,
-            toolCalls: mi.message.toolCalls.map((tc) =>
-              tc.toolCallId === toolCallId
-                ? { ...tc, result, isError, status: isError ? "error" as const : "success" as const }
-                : tc
-            ),
-          },
-        };
-      })
-    );
-  };
+  // surfaceIds still active (not yet deleted) — drives inline + panel rendering
+  const activeSurfaceIdsRef = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
-    request.toolResultHook = (toolCallId: string, result: unknown, isError: boolean) => {
-      toolResultHandlerRef.current?.(toolCallId, result, isError);
-    };
-    return () => { request.toolResultHook = null; };
-  }, [request]);
-
-  // ── tool approval ─────────────────────────────────────────────────────────
-  const sendToolApproval = useCallback((toolCallId: string, approved: boolean) => {
-    bridge.sendToolApproval(toolCallId, approved);
-    if (!approved) {
-      setMessagesRef.current((all) =>
-        all.map((mi) => {
-          if (mi.message.role !== "assistant") return mi;
-          if (!mi.message.toolCalls.some((tc) => tc.toolCallId === toolCallId)) return mi;
-          return {
-            ...mi,
-            message: {
-              ...mi.message,
-              toolCalls: mi.message.toolCalls.map((tc) =>
-                tc.toolCallId === toolCallId ? { ...tc, status: "abort" as const } : tc
-              ),
-            },
-          };
-        })
-      );
-    }
-  }, [bridge]);
+  // ── tool result + approval (extracted to hook) ───────────────────────────
+  const { sendToolApproval } = useToolSideChannel(request, bridge, setMessagesRef);
 
   // ── submit ────────────────────────────────────────────────────────────────
   const handleSubmit = useCallback((text: string, attachments?: AttachmentData[]) => {
@@ -420,44 +182,57 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
       setActiveConversationKey(newId);
     });
 
-    // card-command: append to surfaceId queue AND fire onUpdate so transformMessage
-    // can track cardSurfaceIds (for inline rendering)
+    // card-command: append to single global queue (never reorder/rebuild)
+    // and fire onUpdate so transformMessage tracks cardSurfaceIds per message.
     bridge.onCardCommand(({ command, threadId }: { command: Record<string, unknown>; threadId: string }) => {
-      // update cardCommandQueues
-      const surfaceId: string | null =
-        "createSurface"   in command ? (command as any).createSurface?.surfaceId   ?? null :
-        "updateComponents" in command ? (command as any).updateComponents?.surfaceId ?? null :
-        "updateDataModel"  in command ? (command as any).updateDataModel?.surfaceId  ?? null :
-        "deleteSurface"    in command ? (command as any).deleteSurface?.surfaceId    ?? null :
-        null;
+      // Append to global queue — XCard.Box slices from processedCommandsCount
+      cardCommandQueueRef.current = [...cardCommandQueueRef.current, command as XAgentCommand_v0_9];
+      setCardCommandVersion((v) => v + 1);   // trigger re-render with new array ref
 
-      if (surfaceId) {
-        setCardCommandQueues((prev) => {
-          const next = new Map(prev);
-          if ("deleteSurface" in command) {
-            next.delete(surfaceId);
-          } else {
-            next.set(surfaceId, [...(next.get(surfaceId) ?? []), command as XAgentCommand_v0_9]);
-          }
-          return next;
-        });
+      // Track active surfaceIds (for inline/panel rendering)
+      if ("createSurface" in command) {
+        const sid = (command as any).createSurface?.surfaceId;
+        if (sid) activeSurfaceIdsRef.current.add(sid);
+      } else if ("deleteSurface" in command) {
+        const sid = (command as any).deleteSurface?.surfaceId;
+        if (sid) {
+          activeSurfaceIdsRef.current.delete(sid);
+          // Remove surfaceId from all messages so inline/panel stops rendering it
+          setMessagesRef.current((all) =>
+            all.map((mi) => {
+              if (!mi.message.cardSurfaceIds?.includes(sid)) return mi;
+              return {
+                ...mi,
+                message: {
+                  ...mi.message,
+                  cardSurfaceIds: mi.message.cardSurfaceIds.filter((id) => id !== sid),
+                },
+              };
+            })
+          );
+        }
       }
 
-      // also fire onUpdate on the request so transformMessage tracks cardSurfaceIds
-      // (only relevant during an active run for the current thread)
-      request.options.callbacks?.onUpdate?.(
-        { type: "card-command", command },
-        new Headers()
-      );
+      // Fire onUpdate only while a request is in-flight so transformMessage
+      // can track cardSurfaceIds. Skip after stream ends to avoid stale callback.
+      if (request.isRequesting) {
+        request.options.callbacks?.onUpdate?.(
+          { type: "card-command", command },
+          new Headers()
+        );
+      }
     });
 
-    // trigger-message: R can programmatically inject a new user message
+    // trigger-message: R can programmatically inject a new user message.
+    // threadId="default" is the R fallback sentinel — always resolve to active key.
     bridge.onTriggerMessage(({ text, threadId }: { text: string; threadId: string }) => {
-      const target = threadId || activeKeyRef.current;
-      if (threadId && threadId !== activeKeyRef.current) {
-        setActiveConversationKey(threadId);
+      const target = (threadId && threadId !== "default") ? threadId : activeKeyRef.current;
+      if (target !== activeKeyRef.current) {
+        setActiveConversationKey(target);
       }
-      onRequestRef.current({ query: text, threadId: target });
+      // Use queueRequest so the message lands in the correct conversationKey store
+      // even if setActiveConversationKey hasn't re-rendered yet
+      queueRequest(target, { query: text, threadId: target });
     });
 
     bridge.sendReady();
@@ -485,21 +260,15 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   const avatarConfig = config.assistant_avatar ?? { fallback: "AI" };
 
   // ── xCard derived state ───────────────────────────────────────────────────
-  // Flatten all surface queues into one array for XCard.Box
-  const allCardCommands = useMemo(() => {
-    const result: XAgentCommand_v0_9[] = [];
-    cardCommandQueues.forEach((cmds) => result.push(...cmds));
-    return result;
-  }, [cardCommandQueues]);
+  // Use the ref array directly — cardCommandVersion triggers re-render when it changes
+  const allCardCommands = cardCommandQueueRef.current;
 
-  // Collect all active surfaceIds across all messages (for panel mode and XCard.Box awareness)
-  const activeSurfaceIds = useMemo(() => {
-    const ids: string[] = [];
-    messages.forEach(({ message }) => {
-      message.cardSurfaceIds?.forEach((id) => { if (!ids.includes(id)) ids.push(id); });
-    });
-    return ids;
-  }, [messages]);
+  // activeSurfaceIds from ref (updated synchronously in onCardCommand)
+  const activeSurfaceIds = useMemo(
+    () => [...activeSurfaceIdsRef.current],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cardCommandVersion]
+  );
 
   const handleCardAction = useCallback((payload: ActionPayload) => {
     (window as any).Shiny?.setInputValue(

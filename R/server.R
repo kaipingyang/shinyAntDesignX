@@ -186,7 +186,7 @@ antDesignXServer <- function(id, handler,
       resolver <- get0(key, envir = approval_resolvers)
       if (!is.null(resolver)) {
         rm(list = key, envir = approval_resolvers)
-        tryCatch(resolver(FALSE), error = function(e) NULL)
+        tryCatch(resolver(list(approved = FALSE, toolCallId = key)), error = function(e) NULL)
       }
     }
   }, ignoreNULL = TRUE, ignoreInit = TRUE)
@@ -288,10 +288,11 @@ antDesignXServer <- function(id, handler,
         list(command = command, threadId = thread_id)
       )
     },
-    trigger_message = function(text, thread_id = "default") {
+    trigger_message = function(text, thread_id = NULL) {
+      # thread_id=NULL means "use whatever is active in JS" — JS resolves via activeKeyRef
       session$sendCustomMessage(
         paste0(input_id, ":trigger-message"),
-        list(text = text, threadId = thread_id)
+        list(text = text, threadId = thread_id %||% "default")
       )
     }
   ))
