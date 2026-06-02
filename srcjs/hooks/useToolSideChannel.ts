@@ -4,7 +4,7 @@ import type { ShinyBridge } from "../bridge";
 import type { ShinyMessage } from "../ShinyBridgeChatProvider";
 import type { ShinyBridgeRequest } from "../ShinyBridgeRequest";
 
-type SetMessages = (updater: MessageInfo<ShinyMessage>[] | ((prev: MessageInfo<ShinyMessage>[]) => MessageInfo<ShinyMessage>[])) => void;
+type SetMessages = (updater: MessageInfo<ShinyMessage>[] | ((prev: MessageInfo<ShinyMessage>[]) => MessageInfo<ShinyMessage>[])) => boolean | void;
 
 /** Wires up tool-result side-channel (toolResultHook) and tool approval UI. */
 export function useToolSideChannel(
@@ -42,6 +42,8 @@ export function useToolSideChannel(
 
   const sendToolApproval = useCallback((toolCallId: string, approved: boolean) => {
     bridge.sendToolApproval(toolCallId, approved);
+    // bridge is from useState — stable reference, safe to omit from deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     if (!approved) {
       setMessagesRef.current((all) =>
         all.map((mi) => {

@@ -33,6 +33,12 @@
 #' human-in-the-loop approval, attachments, and optional SQLite session
 #' persistence.
 #'
+#' @section Multi-user warning:
+#' Call this function **inside `server()`**, not in `global.R` or at app level.
+#' The returned handler closes over per-session state (`chats` list). Sharing a
+#' single handler across Shiny sessions causes users to see each other's
+#' conversation history.
+#'
 #' @param chat A zero-argument function returning a new `ellmer` chat object.
 #'   Called once per thread on first message.
 #' @param tools A list of `ellmer::tool()` objects to register on each chat.
@@ -191,6 +197,11 @@ make_ellmer_session_loader <- function(store) {
 #' Supports streaming, tool approval UI, thinking output, attachments,
 #' and session persistence across R restarts.
 #'
+#' @section Multi-user warning:
+#' Call this function **inside `server()`**, not in `global.R` or at app level.
+#' The returned handler closes over per-session state (`clients` list). Sharing a
+#' single handler across Shiny sessions causes users to share Claude agent state.
+#'
 #' @param options A `ClaudeAgentOptions` object.
 #' @param session_map_path Path to the `.rds` file for thread→session mapping.
 #'
@@ -323,6 +334,14 @@ make_claude_handler <- function(options          = NULL,
         if (interrupted) {
           if (inherits(msg, "ResultMessage")) {
             persist_session(thread_id, msg$session_id)
+            # Finalize any emitted but unresolved tool calls so they don't stay loading
+            for (key in ls(tb)) {
+              blk <- tb[[key]]
+              if (isTRUE(blk$emitted) && !isTRUE(blk$approval_handled))
+                on_tool_result(blk$id, "Interrupted", is_error = TRUE)
+            }
+            for (tid in pending_tool_ids) on_tool_result(tid, "Interrupted", is_error = TRUE)
+            pending_tool_ids <- character(0)
             drain_done <- TRUE; break
           }
           next

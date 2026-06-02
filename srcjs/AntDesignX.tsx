@@ -12,7 +12,7 @@ import { ShinyBridgeRequest } from "./ShinyBridgeRequest";
 import { createShinyProvider } from "./ShinyBridgeChatProvider";
 import type { ShinyMessage } from "./ShinyBridgeChatProvider";
 import type { ShinyInput } from "./ShinyBridgeRequest";
-import type { WidgetConfig } from "./types";
+import type { WidgetConfig, ToolCallState } from "./types";
 import type { SessionItem, AttachmentData } from "./bridge";
 import { useToolSideChannel } from "./hooks/useToolSideChannel";
 import { AssistantContent } from "./components/AssistantContent";
@@ -76,6 +76,9 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   const onRequestRef = useRef(onRequest);
   onRequestRef.current = onRequest;
 
+  const queueRequestRef = useRef(queueRequest);
+  queueRequestRef.current = queueRequest;
+
   // ── xCard config ──────────────────────────────────────────────────────────
   const xcardMode = config.xcard_mode ?? "inline";
   const xcardPanelWidth = config.xcard_panel_width ?? 360;
@@ -94,16 +97,23 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   const { sendToolApproval } = useToolSideChannel(request, bridge, setMessagesRef);
 
   // ── submit ────────────────────────────────────────────────────────────────
+  // isFirstMessageRef tracks whether the current conversation has received any
+  // messages yet, to auto-name it on first submit. Using a ref avoids adding
+  // messages.length to the dep array which would recreate handleSubmit on every
+  // streaming chunk and cascade unnecessary Sender re-renders.
+  const isFirstMessageRef = useRef(true);
+  useEffect(() => {
+    isFirstMessageRef.current = messages.length === 0;
+  }, [messages.length]);
+
   const handleSubmit = useCallback((text: string, attachments?: AttachmentData[]) => {
     if (!text.trim()) return;
-    // Auto-name the conversation on its first message
-    const isFirst = messages.length === 0;
-    if (isFirst) {
+    if (isFirstMessageRef.current) {
       const label = text.slice(0, 24) + (text.length > 24 ? "…" : "");
       setConversation(activeConversationKey, { label });
     }
     onRequest({ query: text, threadId: activeConversationKey, attachments });
-  }, [onRequest, activeConversationKey, messages.length, setConversation]);
+  }, [onRequest, activeConversationKey, setConversation]);
 
   // ── server sessions ───────────────────────────────────────────────────────
   const unloadedSessionIds = useRef(new Set<string>());
@@ -232,7 +242,7 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
       }
       // Use queueRequest so the message lands in the correct conversationKey store
       // even if setActiveConversationKey hasn't re-rendered yet
-      queueRequest(target, { query: text, threadId: target });
+      queueRequestRef.current(target, { query: text, threadId: target });
     });
 
     bridge.sendReady();
@@ -335,7 +345,7 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
         ) : undefined,
       };
     });
-  }, [messages, sendToolApproval, isRequesting, onReload, activeConversationKey]);
+  }, [messages, sendToolApproval, isRequesting, onReload, activeConversationKey, xcardMode]);
 
   // ── bubble role config ────────────────────────────────────────────────────
   const bubbleRoles = useMemo(() => ({

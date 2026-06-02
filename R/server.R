@@ -69,6 +69,8 @@ antDesignXServer <- function(id, handler,
   force(suggestions); force(commands)
   force(tools); force(action_items); force(on_action); force(on_session_load)
   force(on_feedback); force(strings); force(assistant_avatar)
+  if (!is.numeric(xcard_panel_width) || xcard_panel_width <= 0)
+    stop("`xcard_panel_width` must be a positive number")
   session  <- shiny::getDefaultReactiveDomain()
   input_id <- paste0(id, "_input")
 
@@ -233,6 +235,7 @@ antDesignXServer <- function(id, handler,
   shiny::observeEvent(session$input[[paste0(input_id, "_sessions_ready")]], {
     if (!is.null(pending_sessions)) {
       session$sendCustomMessage(paste0(input_id, ":sessions"), pending_sessions)
+      pending_sessions <<- NULL
     }
   }, ignoreNULL = TRUE, ignoreInit = TRUE)
 
