@@ -282,8 +282,11 @@ antDesignXServer <- function(id, handler,
       cbs$on_tool_result(tool_call_id, result, is_error)
     },
     send_sessions = function(sessions) {
+      # Store for _sessions_ready replay only — do NOT send immediately.
+      # The widget signals readiness after React mounts; R then delivers once.
+      # Sending immediately AND storing causes double delivery and duplicate
+      # sendLoadSession calls.
       pending_sessions <<- sessions
-      session$sendCustomMessage(paste0(input_id, ":sessions"), sessions)
     },
     send_card_command = function(command, thread_id = "default") {
       session$sendCustomMessage(
