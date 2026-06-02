@@ -66,7 +66,12 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     <Button
       type={variant === "primary" ? "primary" : variant as any}
       disabled={disabled}
-      onClick={() => { if (action?.event && onAction) onAction(action.event.name, action.event.context ?? {}); }}
+      onClick={() => {
+        // Pass empty context — let Card.resolveActionContextPathRefs read paths
+        // from dataModel via actionConfig. Passing action.event.context directly
+        // would override the resolved values with raw {path} objects.
+        if (action?.event && onAction) onAction(action.event.name, {});
+      }}
       style={{ margin: "4px 2px" }}
     >
       {label}
