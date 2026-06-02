@@ -281,8 +281,10 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   );
 
   const handleCardAction = useCallback((payload: ActionPayload) => {
+    // inputId = "${outputId}_input"; strip the suffix to match R's input$ namespace
+    const outputId = inputId.replace(/_input$/, "");
     (window as any).Shiny?.setInputValue(
-      `${inputId}_card_action`,
+      `${outputId}_card_action`,
       { name: payload.name, surfaceId: payload.surfaceId, context: payload.context, ts: Date.now() },
       { priority: "event" }
     );
