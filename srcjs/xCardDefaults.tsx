@@ -425,33 +425,20 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     </div>
   ),
 
-  // RadioGroup: uncontrolled — uses internal state to prevent updateComponents
-  // from resetting the selection. defaultValue sets initial value only.
-  RadioGroup: ({ label, options = [], value, dataPath, onDataChange }: any) => {
-    const [selected, setSelected] = React.useState(value);
-    // Sync defaultValue on first render only (ignore subsequent updateComponents)
-    const initialised = React.useRef(false);
-    React.useEffect(() => {
-      if (!initialised.current && value !== undefined) {
-        setSelected(value);
-        initialised.current = true;
-      }
-    }, [value]);
-    return (
-      <div style={{ marginBottom: 8 }}>
-        {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
-        <Radio.Group
-          value={selected}
-          onChange={(e) => {
-            setSelected(e.target.value);
-            if (dataPath && onDataChange) onDataChange(dataPath, e.target.value);
-          }}
-        >
-          {(options as string[]).map((o) => <Radio key={o} value={o}>{o}</Radio>)}
-        </Radio.Group>
-      </div>
-    );
-  },
+  // RadioGroup: two-way binding via value (read from dataModel) + onDataChange (write)
+  // value prop comes from Card's resolvePropsV09 — already resolved to actual value.
+  // onDataChange is injected by Card.NodeRenderer for direct dataModel writes.
+  RadioGroup: ({ label, options = [], value, dataPath, onDataChange }: any) => (
+    <div style={{ marginBottom: 8 }}>
+      {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
+      <Radio.Group
+        value={value}
+        onChange={(e) => { if (dataPath && onDataChange) onDataChange(dataPath, e.target.value); }}
+      >
+        {(options as string[]).map((o) => <Radio key={o} value={o}>{o}</Radio>)}
+      </Radio.Group>
+    </div>
+  ),
 
   SwitchInput: ({ label, checked, dataPath, checkedText = "开", uncheckedText = "关", onDataChange }: any) => (
     <div style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
@@ -518,27 +505,14 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     />
   ),
 
-  // Segmented: same uncontrolled pattern as RadioGroup
-  Segmented: ({ options = [], value, dataPath, block = false, onDataChange }: any) => {
-    const [selected, setSelected] = React.useState(value);
-    const initialised = React.useRef(false);
-    React.useEffect(() => {
-      if (!initialised.current && value !== undefined) {
-        setSelected(value);
-        initialised.current = true;
-      }
-    }, [value]);
-    return (
-      <Segmented
-        options={options as string[]}
-        value={selected}
-        block={block}
-        style={{ marginBottom: 8 }}
-        onChange={(v) => {
-          setSelected(String(v));
-          if (dataPath && onDataChange) onDataChange(dataPath, String(v));
-        }}
-      />
-    );
-  },
+  // Segmented: same two-way binding pattern as RadioGroup
+  Segmented: ({ options = [], value, dataPath, block = false, onDataChange }: any) => (
+    <Segmented
+      options={options as string[]}
+      value={value}
+      block={block}
+      style={{ marginBottom: 8 }}
+      onChange={(v) => { if (dataPath && onDataChange) onDataChange(dataPath, String(v)); }}
+    />
+  ),
 };

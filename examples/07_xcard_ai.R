@@ -58,8 +58,7 @@ ui <- page_fillable(
 # starting with "/" as a dataModel path and resolves it to the stored value,
 # destroying the path string before it reaches the component.
 make_param_components <- function(current_step, submit_label, submit_disabled,
-                                  status_msg, status_type, submit_action,
-                                  region = "全国", period = "本月") {
+                                  status_msg, status_type, submit_action) {
   list(
     list(id = "steps", component = "Steps",
          current = current_step,
@@ -68,16 +67,16 @@ make_param_components <- function(current_step, submit_label, submit_disabled,
            list(title = "分析中"),
            list(title = "完成")
          )),
-    # value = initial selection shown; component manages its own state after that
-    # dataPath = key for onDataChange to write user's choice into Card's dataModel
+    # value = { path: "/region" } → Card reads from dataModel (two-way binding)
+    # dataPath = "region" → onDataChange writes to dataModel["region"]
     list(id = "region", component = "RadioGroup",
          label    = "分析地区",
          options  = list("华东", "华南", "华北", "全国"),
-         value    = region,
+         value    = list(path = "/region"),
          dataPath = "region"),
     list(id = "period", component = "Segmented",
          options  = list("本周", "本月", "本季度", "本年"),
-         value    = period,
+         value    = list(path = "/period"),
          dataPath = "period"),
     list(id = "submit", component = "Button",
          label    = submit_label,
@@ -163,7 +162,7 @@ server <- function(input, output, session) {
     action_log_val(c(action_log_val(),
       sprintf("[%s] %s | 地区:%s | 时段:%s", ts, act$name, region, period)))
 
-    # 方向3：Steps → 分析中（保留用户选择的值）
+    # 方向3：Steps → 分析中（value=path binding 保留用户选择）
     ctrl$send_card_command(
       xcard_update_components("analysis-card",
         make_param_components(
@@ -172,9 +171,7 @@ server <- function(input, output, session) {
           submit_disabled = TRUE,
           status_msg      = paste0("正在分析", region, "地区", period, "数据..."),
           status_type     = "info",
-          submit_action   = list(event = list(name = "noop", context = list())),
-          region          = region,
-          period          = period
+          submit_action   = list(event = list(name = "noop", context = list()))
         )),
       thread_id = "default"
     )
@@ -185,7 +182,7 @@ server <- function(input, output, session) {
 
     Sys.sleep(0.5)
 
-    # 方向3：Steps → 完成（保留用户选择的值）
+    # 方向3：Steps → 完成（value=path binding 保留用户选择）
     ctrl$send_card_command(
       xcard_update_components("analysis-card",
         make_param_components(
@@ -194,9 +191,7 @@ server <- function(input, output, session) {
           submit_disabled = FALSE,
           status_msg      = paste0("✅ 分析完成：", region, " · ", period),
           status_type     = "success",
-          submit_action   = start_action,
-          region          = region,
-          period          = period
+          submit_action   = start_action
         )),
       thread_id = "default"
     )
