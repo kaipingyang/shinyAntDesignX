@@ -34,30 +34,69 @@ ui <- page_fillable(
   "))),
   div(
     style = "display: flex; height: 100vh; overflow: hidden;",
-
-    # 左侧：Chat 侧边栏
     div(class = "chat-sidebar",
         antDesignXOutput("chat", height = "100vh")),
-
-    # 右侧：主面板
     div(class = "main-panel",
         h2("数据分析主面板", style = "margin-top:0;color:#1f2937;"),
         p("通过左侧 AI 聊天交互，主面板将实时更新分析结果。",
           style = "color:#6b7280;"),
         hr(),
-        # 方向1：KPI 指标卡 + 表格
         uiOutput("kpi_cards"),
         conditionalPanel("output.has_data",
           h3("📊 销售明细"),
           DTOutput("sales_table")
         ),
         hr(),
-        # Action 日志
         h3("🃏 Action 日志"),
         verbatimTextOutput("action_log")
     )
   )
 )
+
+# ── 组件定义辅助（避免重复）──────────────────────────────────────────────────
+# NOTE: dataPath must NOT start with "/" — resolveValueV09 treats any string
+# starting with "/" as a dataModel path and resolves it to the stored value,
+# destroying the path string before it reaches the component.
+make_param_components <- function(current_step, submit_label, submit_disabled,
+                                  status_msg, status_type, submit_action) {
+  list(
+    list(id = "steps", component = "Steps",
+         current = current_step,
+         items = list(
+           list(title = "选择参数"),
+           list(title = "分析中"),
+           list(title = "完成")
+         )),
+    list(id = "region", component = "RadioGroup",
+         label    = "分析地区",
+         options  = list("华东", "华南", "华北", "全国"),
+         value    = list(path = "region"),
+         dataPath = "region"),
+    list(id = "period", component = "Segmented",
+         options  = list("本周", "本月", "本季度", "本年"),
+         value    = list(path = "period"),
+         dataPath = "period"),
+    list(id = "submit", component = "Button",
+         label    = submit_label,
+         variant  = if (submit_disabled) "default" else "primary",
+         disabled = submit_disabled,
+         action   = submit_action),
+    list(id = "status", component = "Alert",
+         message  = status_msg,
+         type     = status_type,
+         showIcon = TRUE),
+    list(id = "root", component = "Container", gap = 12L,
+         children = list("steps", "region", "period", "submit", "status"))
+  )
+}
+
+start_action <- list(event = list(
+  name    = "analysis:start",
+  context = list(
+    region = list(path = "region"),
+    period = list(path = "period")
+  )
+))
 
 # ── Server ─────────────────────────────────────────────────────────────────────
 server <- function(input, output, session) {
@@ -76,58 +115,28 @@ server <- function(input, output, session) {
 
     handler = function(message, thread_id, on_chunk, on_done, on_error, ...) {
 
-      # 创建 surface
       ctrl$send_card_command(xcard_create_surface("analysis-card"), thread_id = thread_id)
 
       for (ch in strsplit(paste0("正在分析「", message, "」...\n\n"), "")[[1]]) {
         on_chunk(ch); Sys.sleep(0.008)
       }
 
-      # 推送初始卡片：Steps + RadioGroup + Segmented + Button + Alert
       ctrl$send_card_command(
-        xcard_update_components("analysis-card", list(
-          list(id = "steps", component = "Steps",
-               current = 0L,
-               items = list(
-                 list(title = "选择参数"),
-                 list(title = "分析中"),
-                 list(title = "完成")
-               )),
-          list(id = "region", component = "RadioGroup",
-               label    = "分析地区",
-               options  = list("华东", "华南", "华北", "全国"),
-               value    = list(path = "/params/region"),
-               dataPath = "/params/region"),
-          list(id = "period", component = "Segmented",
-               options  = list("本周", "本月", "本季度", "本年"),
-               value    = list(path = "/params/period"),
-               dataPath = "/params/period"),
-          list(id = "submit", component = "Button",
-               label  = "开始分析", variant = "primary",
-               action = list(event = list(
-                 name    = "analysis:start",
-                 context = list(
-                   region = list(path = "/params/region"),
-                   period = list(path = "/params/period")
-                 )))),
-          list(id = "status", component = "Alert",
-               message = "请选择分析维度后点击「开始分析」",
-               type = "info", showIcon = TRUE),
-          list(id = "root", component = "Container", gap = 12L,
-               children = list("steps", "region", "period", "submit", "status"))
-        )),
+        xcard_update_components("analysis-card",
+          make_param_components(
+            current_step     = 0L,
+            submit_label     = "开始分析",
+            submit_disabled  = FALSE,
+            status_msg       = "请选择分析维度后点击「开始分析」",
+            status_type      = "info",
+            submit_action    = start_action
+          )),
         thread_id = thread_id
       )
 
-      # 初始化 dataModel
-      ctrl$send_card_command(
-        xcard_update_data("analysis-card", "/params/region", "全国"),
-        thread_id = thread_id
-      )
-      ctrl$send_card_command(
-        xcard_update_data("analysis-card", "/params/period", "本月"),
-        thread_id = thread_id
-      )
+      # flat keys — no leading slash so resolveValueV09 treats as literal
+      ctrl$send_card_command(xcard_update_data("analysis-card", "region", "全国"), thread_id = thread_id)
+      ctrl$send_card_command(xcard_update_data("analysis-card", "period", "本月"), thread_id = thread_id)
 
       on_chunk('参数卡片已生成，请选择分析维度后点击"开始分析"。')
       on_done()
@@ -143,78 +152,44 @@ server <- function(input, output, session) {
     period <- act$context$period$value %||% "本月"
     ts     <- format(Sys.time(), "%H:%M:%S")
 
-    # 记录日志
     action_log_val(c(action_log_val(),
       sprintf("[%s] %s | 地区:%s | 时段:%s", ts, act$name, region, period)))
 
-    # ── 方向3：Steps 更新为"分析中"，禁用按钮 ────────────────────────────
+    # 方向3：Steps → 分析中
     ctrl$send_card_command(
-      xcard_update_components("analysis-card", list(
-        list(id = "steps", component = "Steps", current = 1L, status = "process",
-             items = list(
-               list(title = "选择参数"),
-               list(title = "分析中"),
-               list(title = "完成")
-             )),
-        list(id = "region", component = "RadioGroup",
-             label = "分析地区",
-             options = list("华东", "华南", "华北", "全国"),
-             value = list(path = "/params/region"), dataPath = "/params/region"),
-        list(id = "period", component = "Segmented",
-             options = list("本周", "本月", "本季度", "本年"),
-             value = list(path = "/params/period"), dataPath = "/params/period"),
-        list(id = "submit", component = "Button",
-             label = "分析中...", variant = "default", disabled = TRUE,
-             action = list(event = list(name = "noop", context = list()))),
-        list(id = "status", component = "Alert",
-             message = paste0("正在分析", region, "地区", period, "数据..."),
-             type = "info", showIcon = TRUE),
-        list(id = "root", component = "Container", gap = 12L,
-             children = list("steps", "region", "period", "submit", "status"))
-      )),
+      xcard_update_components("analysis-card",
+        make_param_components(
+          current_step    = 1L,
+          submit_label    = "分析中...",
+          submit_disabled = TRUE,
+          status_msg      = paste0("正在分析", region, "地区", period, "数据..."),
+          status_type     = "info",
+          submit_action   = list(event = list(name = "noop", context = list()))
+        )),
       thread_id = "default"
     )
 
-    # ── 方向1：生成数据，更新主面板 ──────────────────────────────────────
+    # 方向1：更新主面板
     data <- make_sales_data(region, period)
     analysis_data(list(data = data, region = region, period = period))
 
-    # ── 短暂延迟，然后方向3完成态 ─────────────────────────────────────────
     Sys.sleep(0.5)
 
+    # 方向3：Steps → 完成
     ctrl$send_card_command(
-      xcard_update_components("analysis-card", list(
-        list(id = "steps", component = "Steps", current = 2L, status = "finish",
-             items = list(
-               list(title = "选择参数"),
-               list(title = "分析中"),
-               list(title = "完成")
-             )),
-        list(id = "region", component = "RadioGroup",
-             label = "分析地区",
-             options = list("华东", "华南", "华北", "全国"),
-             value = list(path = "/params/region"), dataPath = "/params/region"),
-        list(id = "period", component = "Segmented",
-             options = list("本周", "本月", "本季度", "本年"),
-             value = list(path = "/params/period"), dataPath = "/params/period"),
-        list(id = "submit", component = "Button",
-             label = "重新分析", variant = "default", disabled = FALSE,
-             action = list(event = list(
-               name = "analysis:start",
-               context = list(
-                 region = list(path = "/params/region"),
-                 period = list(path = "/params/period")
-               )))),
-        list(id = "status", component = "Alert",
-             message = paste0("✅ 分析完成：", region, " · ", period),
-             type = "success", showIcon = TRUE),
-        list(id = "root", component = "Container", gap = 12L,
-             children = list("steps", "region", "period", "submit", "status"))
-      )),
+      xcard_update_components("analysis-card",
+        make_param_components(
+          current_step    = 2L,
+          submit_label    = "重新分析",
+          submit_disabled = FALSE,
+          status_msg      = paste0("✅ 分析完成：", region, " · ", period),
+          status_type     = "success",
+          submit_action   = start_action
+        )),
       thread_id = "default"
     )
 
-    # ── 方向2：触发 AI 二轮分析 ──────────────────────────────────────────
+    # 方向2：触发 AI 二轮分析
     ctrl$trigger_message(
       paste0("请用3个要点分析", region, "地区", period,
              "的销售数据，每个要点一句话，用•列出。"),
@@ -256,12 +231,10 @@ server <- function(input, output, session) {
   output$sales_table <- renderDT({
     d <- analysis_data()
     req(!is.null(d))
-    datatable(
-      d$data,
+    datatable(d$data,
       options  = list(dom = "t", pageLength = 10),
       rownames = FALSE,
-      class    = "compact stripe"
-    )
+      class    = "compact stripe")
   })
 
   output$action_log <- renderText({
