@@ -68,6 +68,8 @@ make_param_components <- function(current_step, submit_label, submit_disabled,
            list(title = "分析中"),
            list(title = "完成")
          )),
+    # value = initial selection shown; component manages its own state after that
+    # dataPath = key for onDataChange to write user's choice into Card's dataModel
     list(id = "region", component = "RadioGroup",
          label    = "分析地区",
          options  = list("华东", "华南", "华北", "全国"),
