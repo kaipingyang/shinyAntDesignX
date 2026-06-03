@@ -58,8 +58,7 @@ ui <- page_fillable(
 # starting with "/" as a dataModel path and resolves it to the stored value,
 # destroying the path string before it reaches the component.
 make_param_components <- function(current_step, submit_label, submit_disabled,
-                                  status_msg, status_type, submit_action,
-                                  default_region = "全国", default_period = "本月") {
+                                  status_msg, status_type, submit_action) {
   list(
     list(id = "steps", component = "Steps",
          current = current_step,
@@ -68,20 +67,19 @@ make_param_components <- function(current_step, submit_label, submit_disabled,
            list(title = "分析中"),
            list(title = "完成")
          )),
-    # value = literal string (NOT path binding).
-    # Path binding causes Card to re-read from dataModel on every updateComponents,
-    # but updateDataModel commands are also replayed → overwrites user selection.
-    # Internal useState in RadioGroup/Segmented ignores subsequent value prop changes.
-    # dataPath = "region" → onDataChange writes to Card's dataModel["region"]
-    #   so Button action context { path: "/region" } resolves correctly.
+    # value = { path: "/region" } → resolvePropsV09 reads from Card's dataModel
+    # dataPath = "region" → onDataChange writes to dataModel["region"]
+    # useEffect([]) in RadioGroup/Segmented initialises dataModel on mount.
+    # NO xcard_update_data — updateDataModel commands replay on every updateComponents,
+    # overwriting user selections with defaults.
     list(id = "region", component = "RadioGroup",
          label    = "分析地区",
          options  = list("华东", "华南", "华北", "全国"),
-         value    = default_region,
+         value    = list(path = "/region"),
          dataPath = "region"),
     list(id = "period", component = "Segmented",
          options  = list("本周", "本月", "本季度", "本年"),
-         value    = default_period,
+         value    = list(path = "/period"),
          dataPath = "period"),
     list(id = "submit", component = "Button",
          label    = submit_label,

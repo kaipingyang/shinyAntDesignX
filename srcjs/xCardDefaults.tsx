@@ -425,23 +425,24 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     </div>
   ),
 
-  // RadioGroup: fully uncontrolled — antd manages selection state internally.
-  // defaultValue sets initial selection; subsequent prop changes are ignored by antd.
-  // Writes initial value and every change to Card's dataModel via onDataChange
-  // so Button action context paths resolve correctly.
+  // RadioGroup: controlled via Card's dataModel (two-way binding).
+  // value prop is already resolved by resolvePropsV09 to actual dataModel value.
+  // useEffect([]) initialises the dataModel key via onDataChange so action context
+  // path bindings resolve correctly from the start.
+  // Do NOT send xcard_update_data for these paths — updateDataModel commands are
+  // replayed on every updateComponents, overwriting user selections.
   RadioGroup: ({ label, options = [], value, dataPath, onDataChange }: any) => {
-    // Write initial value to dataModel on first mount so action context paths resolve
     React.useEffect(() => {
       if (dataPath && onDataChange && value !== undefined) {
         onDataChange(dataPath, value);
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // run once on mount only
+    }, []);
     return (
       <div style={{ marginBottom: 8 }}>
         {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
         <Radio.Group
-          defaultValue={value}
+          value={value}
           onChange={(e) => { if (dataPath && onDataChange) onDataChange(dataPath, e.target.value); }}
         >
           {(options as string[]).map((o) => <Radio key={o} value={o}>{o}</Radio>)}
@@ -515,17 +516,17 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     />
   ),
 
-  // Segmented: fully uncontrolled — same pattern as RadioGroup.
+  // Segmented: same controlled two-way binding pattern as RadioGroup.
   Segmented: ({ options = [], value, dataPath, block = false, onDataChange }: any) => {
     React.useEffect(() => {
       if (dataPath && onDataChange && value !== undefined) {
         onDataChange(dataPath, String(value));
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // run once on mount only
+    }, []);
     return (
       <Segmented
-        defaultValue={value}
+        value={value}
         options={options as string[]}
         block={block}
         style={{ marginBottom: 8 }}
