@@ -70,11 +70,11 @@ make_param_components <- function(current_step, submit_label, submit_disabled,
     list(id = "region", component = "RadioGroup",
          label    = "分析地区",
          options  = list("华东", "华南", "华北", "全国"),
-         value    = list(path = "region"),
+         value    = list(path = "/region"),
          dataPath = "region"),
     list(id = "period", component = "Segmented",
          options  = list("本周", "本月", "本季度", "本年"),
-         value    = list(path = "period"),
+         value    = list(path = "/period"),
          dataPath = "period"),
     list(id = "submit", component = "Button",
          label    = submit_label,
@@ -93,8 +93,8 @@ make_param_components <- function(current_step, submit_label, submit_disabled,
 start_action <- list(event = list(
   name    = "analysis:start",
   context = list(
-    region = list(path = "region"),
-    period = list(path = "period")
+    region = list(path = "/region"),
+    period = list(path = "/period")
   )
 ))
 
@@ -135,8 +135,8 @@ server <- function(input, output, session) {
       )
 
       # flat keys — no leading slash so resolveValueV09 treats as literal
-      ctrl$send_card_command(xcard_update_data("analysis-card", "region", "全国"), thread_id = thread_id)
-      ctrl$send_card_command(xcard_update_data("analysis-card", "period", "本月"), thread_id = thread_id)
+      ctrl$send_card_command(xcard_update_data("analysis-card", "/region", "全国"), thread_id = thread_id)
+      ctrl$send_card_command(xcard_update_data("analysis-card", "/period", "本月"), thread_id = thread_id)
 
       on_chunk('参数卡片已生成，请选择分析维度后点击"开始分析"。')
       on_done()

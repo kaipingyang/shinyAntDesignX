@@ -67,8 +67,10 @@ R server: `antDesignXServer(id, handler, ...)` — handler receives `on_chunk / 
 - XMarkdown `config` prop must be referentially stable (use `useMemo`)
 - XMarkdown streaming: **must set `hasNextChunk: false` on final chunk** — leaving it `true` freezes incomplete syntax placeholders
 - Vite IIFE format doesn't support multiple entries in one config — each widget built separately via `WIDGET_ENTRY` env var
-- **xCard `dataPath` must NOT start with `/`** — `resolveValueV09` treats any string starting with `/` as a dataModel path and resolves it before the component receives it, destroying the path string. Use flat keys: `dataPath = "region"` not `dataPath = "/params/region"`. The `xcard_update_data` path can still use `/region` or `region` — `getValueByPath` strips the leading `/` anyway.
-- xCard `action.event.context` path bindings (`list(path = "region")`) ARE resolved correctly by Card's `resolveActionContextPathRefs`. This is different from `dataPath` — context path binding works because it goes through `{ path: "..." }` object not a bare string.
+- **xCard `dataPath` must NOT start with `/`** — `resolveValueV09` treats any string starting with `/` as a dataModel path and resolves it before the component receives it, destroying the path string. Use flat keys: `dataPath = "region"` not `dataPath = "/region"`.
+- **xCard `value = list(path = "...")` MUST start with `/`** — `isPathValue` only matches strings starting with `/`. Without leading `/`, the path string is returned as a literal and the component receives the path string itself instead of the dataModel value.
+- Summary: `dataPath = "region"` (no `/`), `value = list(path = "/region")` (with `/`), `xcard_update_data("/region", val)` (either works).
+- xCard `action.event.context` path bindings (`list(path = "/region")`) must also start with `/` — same rule as `value = list(path = ...)`.
 - xCard Button: pass `{}` as context in `onAction(name, {})` — passing `action.event.context` directly overrides Card's resolved values with raw `{path}` objects (componentContext has higher priority in `resolveActionContextPathRefs`).
 - FileCard with `type="image"` but no `src` → broken antd Image; fix: pass `type="file"` + `icon="image"` (see `fileCard/index.tsx resolveType`)
 - Actions `onClick` top-level fires only for dropdown submenus; use per-item `onItemClick` for regular buttons
