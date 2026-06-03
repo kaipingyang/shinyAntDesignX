@@ -431,20 +431,21 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
   // visually resetting the selection.
   // value prop: only used for initial display and written to dataModel on mount.
   RadioGroup: ({ label, options = [], value, dataPath, onDataChange }: any) => {
-    // selectedRef holds the true current value — never reset by prop changes
     const selectedRef = React.useRef<string | undefined>(undefined);
     const [, forceUpdate] = React.useReducer(x => x + 1, 0);
+    const mountCountRef = React.useRef(0);
 
-    // On first render, initialise from value prop
+    mountCountRef.current += 1;
     if (selectedRef.current === undefined && value !== undefined) {
       selectedRef.current = value;
     }
 
     React.useEffect(() => {
-      // Write initial value to Card's dataModel so action context paths resolve
+      console.log('[RadioGroup] MOUNTED #', mountCountRef.current, 'value:', value, 'selected:', selectedRef.current);
       if (dataPath && onDataChange && selectedRef.current !== undefined) {
         onDataChange(dataPath, selectedRef.current);
       }
+      return () => console.log('[RadioGroup] UNMOUNTED');
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -454,6 +455,7 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
         <Radio.Group
           value={selectedRef.current}
           onChange={(e) => {
+            console.log('[RadioGroup] onChange:', e.target.value);
             selectedRef.current = e.target.value;
             forceUpdate();
             if (dataPath && onDataChange) onDataChange(dataPath, e.target.value);
