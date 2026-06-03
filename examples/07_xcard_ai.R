@@ -22,7 +22,7 @@ ui <- page_fillable(
   tags$head(tags$style(HTML("
     html, body { height: 100%; margin: 0; overflow: hidden; }
     .chat-sidebar {
-      width: 420px; min-width: 420px; max-width: 420px;
+      width: 580px; min-width: 580px; max-width: 580px;
       height: 100vh; border-right: 1px solid #e5e7eb;
       flex-shrink: 0; overflow: hidden;
     }
@@ -115,30 +115,35 @@ server <- function(input, output, session) {
 
     handler = function(message, thread_id, on_chunk, on_done, on_error, ...) {
 
-      ctrl$send_card_command(xcard_create_surface("analysis-card"), thread_id = thread_id)
+      # 内部 trigger_message 调用（AI 二轮分析）跳过卡片创建
+      is_internal <- startsWith(message, "请用3个要点分析")
+
+      if (!is_internal) {
+        ctrl$send_card_command(xcard_create_surface("analysis-card"), thread_id = thread_id)
+      }
 
       for (ch in strsplit(paste0("正在分析「", message, "」...\n\n"), "")[[1]]) {
         on_chunk(ch); Sys.sleep(0.008)
       }
 
-      ctrl$send_card_command(
-        xcard_update_components("analysis-card",
-          make_param_components(
-            current_step     = 0L,
-            submit_label     = "开始分析",
-            submit_disabled  = FALSE,
-            status_msg       = "请选择分析维度后点击「开始分析」",
-            status_type      = "info",
-            submit_action    = start_action
-          )),
-        thread_id = thread_id
-      )
+      if (!is_internal) {
+        ctrl$send_card_command(
+          xcard_update_components("analysis-card",
+            make_param_components(
+              current_step     = 0L,
+              submit_label     = "开始分析",
+              submit_disabled  = FALSE,
+              status_msg       = "请选择分析维度后点击「开始分析」",
+              status_type      = "info",
+              submit_action    = start_action
+            )),
+          thread_id = thread_id
+        )
+        ctrl$send_card_command(xcard_update_data("analysis-card", "/region", "全国"), thread_id = thread_id)
+        ctrl$send_card_command(xcard_update_data("analysis-card", "/period", "本月"), thread_id = thread_id)
+        on_chunk('参数卡片已生成，请选择分析维度后点击"开始分析"。')
+      }
 
-      # flat keys — no leading slash so resolveValueV09 treats as literal
-      ctrl$send_card_command(xcard_update_data("analysis-card", "/region", "全国"), thread_id = thread_id)
-      ctrl$send_card_command(xcard_update_data("analysis-card", "/period", "本月"), thread_id = thread_id)
-
-      on_chunk('参数卡片已生成，请选择分析维度后点击"开始分析"。')
       on_done()
     }
   )
