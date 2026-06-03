@@ -6,6 +6,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **所有回复必须使用中文（简体）。** 代码、命令、文件路径、技术术语保持英文原样。
 
+## CRITICAL: 参考文档强制规则
+
+**在任何涉及 Ant Design X 组件的工作前，必须先查阅对应文档和 skill。违反此规则导致的 bug 视为未做调查。**
+
+### 文档位置
+
+| 主题 | 上游源码文档 | 项目 Skill |
+|------|------------|-----------|
+| XCard / A2UI v0.9 | `ant-design-x-src/packages/x/docs/x-card/` | `.claude/skills/x-card/` |
+| XMarkdown | `ant-design-x-src/packages/x/docs/x-markdown/` | `.claude/skills/x-markdown/` |
+| x-sdk (useXChat/Provider) | `ant-design-x-src/packages/x/docs/x-sdk/` | `.claude/skills/use-x-chat/`, `.claude/skills/x-chat-provider/` |
+| XRequest | `ant-design-x-src/packages/x/docs/x-sdk/x-request*` | `.claude/skills/x-request/` |
+| 组件 (Bubble/Sender/等) | `ant-design-x-src/packages/x/docs/` | `.claude/skills/x-components/` |
+| 官方 demo | `ant-design-x-src/packages/x/docs/*/demo/` | — |
+
+### 强制查阅时机
+
+- **修改或新增 xCard 组件行为前** → 必读 `x-card/a2ui-v-0-9.zh-CN.md` + 对应 demo
+- **设计 xCard 组件交互逻辑前** → 必读 `x-card/demo/A2UI_v0.9/` 下对应示例
+- **使用 useXChat/Provider 前** → 必读 `x-sdk/` 文档 + `.claude/skills/use-x-chat/`
+- **遇到组件行为异常** → 先读官方 demo 源码确认正确模式，再改代码
+
 ## What this is
 
 R package (`shinyAntDesignX`) wrapping Ant Design X React components as Shiny htmlwidgets. Component-based architecture: multiple independent widgets, not one monolith.
