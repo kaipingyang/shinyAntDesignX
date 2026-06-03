@@ -425,20 +425,35 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     </div>
   ),
 
-  // RadioGroup: two-way binding via value (read from dataModel) + onDataChange (write)
-  // value prop comes from Card's resolvePropsV09 — already resolved to actual value.
-  // onDataChange is injected by Card.NodeRenderer for direct dataModel writes.
-  RadioGroup: ({ label, options = [], value, dataPath, onDataChange }: any) => (
-    <div style={{ marginBottom: 8 }}>
-      {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
-      <Radio.Group
-        value={value}
-        onChange={(e) => { if (dataPath && onDataChange) onDataChange(dataPath, e.target.value); }}
-      >
-        {(options as string[]).map((o) => <Radio key={o} value={o}>{o}</Radio>)}
-      </Radio.Group>
-    </div>
-  ),
+  // RadioGroup: internal state prevents Card's full-queue replay from resetting
+  // user selections. Card.useEffect replays ALL updateDataModel commands each time
+  // commandQueue grows, overwriting onDataChange writes. Using internal useState
+  // with a one-time initialisation ref breaks that cycle.
+  // value prop: literal string (initial selection), NOT a path binding.
+  // dataPath: written via onDataChange on each change so Button action context works.
+  RadioGroup: ({ label, options = [], value, dataPath, onDataChange }: any) => {
+    const [selected, setSelected] = React.useState<string | undefined>(value);
+    const initialised = React.useRef(false);
+    // Accept the first non-undefined value prop only (ignore subsequent updateComponents)
+    if (!initialised.current && value !== undefined) {
+      initialised.current = true;
+      if (selected === undefined) setSelected(value);
+    }
+    return (
+      <div style={{ marginBottom: 8 }}>
+        {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
+        <Radio.Group
+          value={selected}
+          onChange={(e) => {
+            setSelected(e.target.value);
+            if (dataPath && onDataChange) onDataChange(dataPath, e.target.value);
+          }}
+        >
+          {(options as string[]).map((o) => <Radio key={o} value={o}>{o}</Radio>)}
+        </Radio.Group>
+      </div>
+    );
+  },
 
   SwitchInput: ({ label, checked, dataPath, checkedText = "开", uncheckedText = "关", onDataChange }: any) => (
     <div style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
@@ -505,14 +520,25 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     />
   ),
 
-  // Segmented: same two-way binding pattern as RadioGroup
-  Segmented: ({ options = [], value, dataPath, block = false, onDataChange }: any) => (
-    <Segmented
-      options={options as string[]}
-      value={value}
-      block={block}
-      style={{ marginBottom: 8 }}
-      onChange={(v) => { if (dataPath && onDataChange) onDataChange(dataPath, String(v)); }}
-    />
-  ),
+  // Segmented: same pattern as RadioGroup — internal state, one-time init.
+  Segmented: ({ options = [], value, dataPath, block = false, onDataChange }: any) => {
+    const [selected, setSelected] = React.useState<string | undefined>(value);
+    const initialised = React.useRef(false);
+    if (!initialised.current && value !== undefined) {
+      initialised.current = true;
+      if (selected === undefined) setSelected(value);
+    }
+    return (
+      <Segmented
+        options={options as string[]}
+        value={selected}
+        block={block}
+        style={{ marginBottom: 8 }}
+        onChange={(v) => {
+          setSelected(String(v));
+          if (dataPath && onDataChange) onDataChange(dataPath, String(v));
+        }}
+      />
+    );
+  },
 };

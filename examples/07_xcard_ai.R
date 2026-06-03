@@ -58,7 +58,8 @@ ui <- page_fillable(
 # starting with "/" as a dataModel path and resolves it to the stored value,
 # destroying the path string before it reaches the component.
 make_param_components <- function(current_step, submit_label, submit_disabled,
-                                  status_msg, status_type, submit_action) {
+                                  status_msg, status_type, submit_action,
+                                  default_region = "全国", default_period = "本月") {
   list(
     list(id = "steps", component = "Steps",
          current = current_step,
@@ -67,16 +68,20 @@ make_param_components <- function(current_step, submit_label, submit_disabled,
            list(title = "分析中"),
            list(title = "完成")
          )),
-    # value = { path: "/region" } → Card reads from dataModel (two-way binding)
-    # dataPath = "region" → onDataChange writes to dataModel["region"]
+    # value = literal string (NOT path binding).
+    # Path binding causes Card to re-read from dataModel on every updateComponents,
+    # but updateDataModel commands are also replayed → overwrites user selection.
+    # Internal useState in RadioGroup/Segmented ignores subsequent value prop changes.
+    # dataPath = "region" → onDataChange writes to Card's dataModel["region"]
+    #   so Button action context { path: "/region" } resolves correctly.
     list(id = "region", component = "RadioGroup",
          label    = "分析地区",
          options  = list("华东", "华南", "华北", "全国"),
-         value    = list(path = "/region"),
+         value    = default_region,
          dataPath = "region"),
     list(id = "period", component = "Segmented",
          options  = list("本周", "本月", "本季度", "本年"),
-         value    = list(path = "/period"),
+         value    = default_period,
          dataPath = "period"),
     list(id = "submit", component = "Button",
          label    = submit_label,
@@ -141,8 +146,9 @@ server <- function(input, output, session) {
             )),
           thread_id = thread_id
         )
-        ctrl$send_card_command(xcard_update_data("analysis-card", "/region", "全国"), thread_id = thread_id)
-        ctrl$send_card_command(xcard_update_data("analysis-card", "/period", "本月"), thread_id = thread_id)
+        # No xcard_update_data — initial value is the literal in make_param_components.
+        # Sending updateDataModel would be replayed on every future updateComponents,
+        # overwriting user's selection (Card.useEffect processes full commandQueue each time).
         on_chunk('参数卡片已生成，请选择分析维度后点击"开始分析"。')
       }
 
