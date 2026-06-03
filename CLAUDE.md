@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## CRITICAL: 参考文档强制规则
 
-**在任何涉及 Ant Design X 组件的工作前，必须先查阅对应文档和 skill。违反此规则导致的 bug 视为未做调查。**
+**任何开发、修改、调试工作前，必须先查阅对应上游文档和 skill。未做调查直接改代码导致的 bug 视为流程违规。**
 
 ### 文档位置
 
@@ -21,12 +21,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | 组件 (Bubble/Sender/等) | `ant-design-x-src/packages/x/docs/` | `.claude/skills/x-components/` |
 | 官方 demo | `ant-design-x-src/packages/x/docs/*/demo/` | — |
 
-### 强制查阅时机
+### 强制查阅规则（适用于所有任务，不限于 xCard）
 
-- **修改或新增 xCard 组件行为前** → 必读 `x-card/a2ui-v-0-9.zh-CN.md` + 对应 demo
-- **设计 xCard 组件交互逻辑前** → 必读 `x-card/demo/A2UI_v0.9/` 下对应示例
-- **使用 useXChat/Provider 前** → 必读 `x-sdk/` 文档 + `.claude/skills/use-x-chat/`
-- **遇到组件行为异常** → 先读官方 demo 源码确认正确模式，再改代码
+任何任务开始前：
+
+1. **确定涉及哪些组件/模块** → 找到对应上游文档路径
+2. **读官方 demo 确认正确使用模式** — 官方 demo 是权威，不是猜测
+3. **调用对应 skill** — skill 包含已提炼的最佳实践
+4. **调试行为异常前** → 先读源码 (`ant-design-x-src/`) 确认预期行为，再改代码
+
+**不允许**：跳过文档直接"看起来应该这样"地改代码。每一次这样做都导致了可避免的 bug（例：RadioGroup controlled/uncontrolled 模式错误、dataPath 路径前缀规则、Button onAction context 覆盖问题，全部可通过读 demo 提前发现）。
 
 ## What this is
 
