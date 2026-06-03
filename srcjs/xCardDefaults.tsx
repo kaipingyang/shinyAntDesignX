@@ -425,29 +425,24 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     </div>
   ),
 
-  // RadioGroup: internal state prevents Card's full-queue replay from resetting
-  // user selections. Card.useEffect replays ALL updateDataModel commands each time
-  // commandQueue grows, overwriting onDataChange writes. Using internal useState
-  // with a one-time initialisation ref breaks that cycle.
-  // value prop: literal string (initial selection), NOT a path binding.
-  // dataPath: written via onDataChange on each change so Button action context works.
+  // RadioGroup: fully uncontrolled — antd manages selection state internally.
+  // defaultValue sets initial selection; subsequent prop changes are ignored by antd.
+  // Writes initial value and every change to Card's dataModel via onDataChange
+  // so Button action context paths resolve correctly.
   RadioGroup: ({ label, options = [], value, dataPath, onDataChange }: any) => {
-    const [selected, setSelected] = React.useState<string | undefined>(value);
-    const initialised = React.useRef(false);
-    // Accept the first non-undefined value prop only (ignore subsequent updateComponents)
-    if (!initialised.current && value !== undefined) {
-      initialised.current = true;
-      if (selected === undefined) setSelected(value);
-    }
+    // Write initial value to dataModel on first mount so action context paths resolve
+    React.useEffect(() => {
+      if (dataPath && onDataChange && value !== undefined) {
+        onDataChange(dataPath, value);
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // run once on mount only
     return (
       <div style={{ marginBottom: 8 }}>
         {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
         <Radio.Group
-          value={selected}
-          onChange={(e) => {
-            setSelected(e.target.value);
-            if (dataPath && onDataChange) onDataChange(dataPath, e.target.value);
-          }}
+          defaultValue={value}
+          onChange={(e) => { if (dataPath && onDataChange) onDataChange(dataPath, e.target.value); }}
         >
           {(options as string[]).map((o) => <Radio key={o} value={o}>{o}</Radio>)}
         </Radio.Group>
@@ -520,24 +515,21 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     />
   ),
 
-  // Segmented: same pattern as RadioGroup — internal state, one-time init.
+  // Segmented: fully uncontrolled — same pattern as RadioGroup.
   Segmented: ({ options = [], value, dataPath, block = false, onDataChange }: any) => {
-    const [selected, setSelected] = React.useState<string | undefined>(value);
-    const initialised = React.useRef(false);
-    if (!initialised.current && value !== undefined) {
-      initialised.current = true;
-      if (selected === undefined) setSelected(value);
-    }
+    React.useEffect(() => {
+      if (dataPath && onDataChange && value !== undefined) {
+        onDataChange(dataPath, String(value));
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // run once on mount only
     return (
       <Segmented
+        defaultValue={value}
         options={options as string[]}
-        value={selected}
         block={block}
         style={{ marginBottom: 8 }}
-        onChange={(v) => {
-          setSelected(String(v));
-          if (dataPath && onDataChange) onDataChange(dataPath, String(v));
-        }}
+        onChange={(v) => { if (dataPath && onDataChange) onDataChange(dataPath, String(v)); }}
       />
     );
   },
