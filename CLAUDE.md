@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Language
+
+**所有回复必须使用中文（简体）。** 代码、命令、文件路径、技术术语保持英文原样。
+
 ## What this is
 
 R package (`shinyAntDesignX`) wrapping Ant Design X React components as Shiny htmlwidgets. Component-based architecture: multiple independent widgets, not one monolith.
@@ -63,6 +67,9 @@ R server: `antDesignXServer(id, handler, ...)` — handler receives `on_chunk / 
 - XMarkdown `config` prop must be referentially stable (use `useMemo`)
 - XMarkdown streaming: **must set `hasNextChunk: false` on final chunk** — leaving it `true` freezes incomplete syntax placeholders
 - Vite IIFE format doesn't support multiple entries in one config — each widget built separately via `WIDGET_ENTRY` env var
+- **xCard `dataPath` must NOT start with `/`** — `resolveValueV09` treats any string starting with `/` as a dataModel path and resolves it before the component receives it, destroying the path string. Use flat keys: `dataPath = "region"` not `dataPath = "/params/region"`. The `xcard_update_data` path can still use `/region` or `region` — `getValueByPath` strips the leading `/` anyway.
+- xCard `action.event.context` path bindings (`list(path = "region")`) ARE resolved correctly by Card's `resolveActionContextPathRefs`. This is different from `dataPath` — context path binding works because it goes through `{ path: "..." }` object not a bare string.
+- xCard Button: pass `{}` as context in `onAction(name, {})` — passing `action.event.context` directly overrides Card's resolved values with raw `{path}` objects (componentContext has higher priority in `resolveActionContextPathRefs`).
 - FileCard with `type="image"` but no `src` → broken antd Image; fix: pass `type="file"` + `icon="image"` (see `fileCard/index.tsx resolveType`)
 - Actions `onClick` top-level fires only for dropdown submenus; use per-item `onItemClick` for regular buttons
 - Conversations `activeKey` must be local React state (not directly bound to R) — R provides initial value only
