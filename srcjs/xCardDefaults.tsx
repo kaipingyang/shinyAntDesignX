@@ -425,25 +425,39 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     </div>
   ),
 
-  // RadioGroup: controlled via Card's dataModel (two-way binding).
-  // value prop is already resolved by resolvePropsV09 to actual dataModel value.
-  // useEffect([]) initialises the dataModel key via onDataChange so action context
-  // path bindings resolve correctly from the start.
-  // Do NOT send xcard_update_data for these paths — updateDataModel commands are
-  // replayed on every updateComponents, overwriting user selections.
+  // RadioGroup: uses a stable ref to store the selected value, completely
+  // independent of the value prop after first render. This prevents Card's
+  // commandQueue replay (which re-resolves value from dataModel) from
+  // visually resetting the selection.
+  // value prop: only used for initial display and written to dataModel on mount.
   RadioGroup: ({ label, options = [], value, dataPath, onDataChange }: any) => {
+    // selectedRef holds the true current value — never reset by prop changes
+    const selectedRef = React.useRef<string | undefined>(undefined);
+    const [, forceUpdate] = React.useReducer(x => x + 1, 0);
+
+    // On first render, initialise from value prop
+    if (selectedRef.current === undefined && value !== undefined) {
+      selectedRef.current = value;
+    }
+
     React.useEffect(() => {
-      if (dataPath && onDataChange && value !== undefined) {
-        onDataChange(dataPath, value);
+      // Write initial value to Card's dataModel so action context paths resolve
+      if (dataPath && onDataChange && selectedRef.current !== undefined) {
+        onDataChange(dataPath, selectedRef.current);
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
     return (
       <div style={{ marginBottom: 8 }}>
         {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
         <Radio.Group
-          value={value}
-          onChange={(e) => { if (dataPath && onDataChange) onDataChange(dataPath, e.target.value); }}
+          value={selectedRef.current}
+          onChange={(e) => {
+            selectedRef.current = e.target.value;
+            forceUpdate();
+            if (dataPath && onDataChange) onDataChange(dataPath, e.target.value);
+          }}
         >
           {(options as string[]).map((o) => <Radio key={o} value={o}>{o}</Radio>)}
         </Radio.Group>
@@ -516,21 +530,33 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     />
   ),
 
-  // Segmented: same controlled two-way binding pattern as RadioGroup.
+  // Segmented: same ref-based approach as RadioGroup.
   Segmented: ({ options = [], value, dataPath, block = false, onDataChange }: any) => {
+    const selectedRef = React.useRef<string | undefined>(undefined);
+    const [, forceUpdate] = React.useReducer(x => x + 1, 0);
+
+    if (selectedRef.current === undefined && value !== undefined) {
+      selectedRef.current = String(value);
+    }
+
     React.useEffect(() => {
-      if (dataPath && onDataChange && value !== undefined) {
-        onDataChange(dataPath, String(value));
+      if (dataPath && onDataChange && selectedRef.current !== undefined) {
+        onDataChange(dataPath, selectedRef.current);
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
     return (
       <Segmented
-        value={value}
+        value={selectedRef.current}
         options={options as string[]}
         block={block}
         style={{ marginBottom: 8 }}
-        onChange={(v) => { if (dataPath && onDataChange) onDataChange(dataPath, String(v)); }}
+        onChange={(v) => {
+          selectedRef.current = String(v);
+          forceUpdate();
+          if (dataPath && onDataChange) onDataChange(dataPath, String(v));
+        }}
       />
     );
   },
