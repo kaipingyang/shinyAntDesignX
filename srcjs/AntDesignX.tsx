@@ -193,21 +193,42 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
     });
 
     // card-command: append to single global queue (never reorder/rebuild)
-    // and fire onUpdate so transformMessage tracks cardSurfaceIds per message.
+    // and track cardSurfaceIds directly via setMessages (no request.isRequesting guard).
     bridge.onCardCommand(({ command, threadId }: { command: Record<string, unknown>; threadId: string }) => {
       // Append to global queue — XCard.Box slices from processedCommandsCount
       cardCommandQueueRef.current = [...cardCommandQueueRef.current, command as XAgentCommand_v0_9];
       setCardCommandVersion((v) => v + 1);   // trigger re-render with new array ref
 
-      // Track active surfaceIds (for inline/panel rendering)
       if ("createSurface" in command) {
         const sid = (command as any).createSurface?.surfaceId;
-        if (sid) activeSurfaceIdsRef.current.add(sid);
+        if (sid) {
+          activeSurfaceIdsRef.current.add(sid);
+          // Attach surfaceId to the most recent assistant message in this thread
+          // (inline mode: XCard.Card renders inside that bubble)
+          setMessagesRef.current((all) => {
+            // Find the last assistant message
+            let lastAssistantIdx = -1;
+            for (let i = all.length - 1; i >= 0; i--) {
+              if (all[i].message.role === "assistant") { lastAssistantIdx = i; break; }
+            }
+            if (lastAssistantIdx < 0) return all;
+            const mi = all[lastAssistantIdx];
+            if (mi.message.cardSurfaceIds?.includes(sid)) return all;
+            return all.map((m, i) =>
+              i !== lastAssistantIdx ? m : {
+                ...m,
+                message: {
+                  ...m.message,
+                  cardSurfaceIds: [...(m.message.cardSurfaceIds ?? []), sid],
+                },
+              }
+            );
+          });
+        }
       } else if ("deleteSurface" in command) {
         const sid = (command as any).deleteSurface?.surfaceId;
         if (sid) {
           activeSurfaceIdsRef.current.delete(sid);
-          // Remove surfaceId from all messages so inline/panel stops rendering it
           setMessagesRef.current((all) =>
             all.map((mi) => {
               if (!mi.message.cardSurfaceIds?.includes(sid)) return mi;
@@ -221,15 +242,6 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
             })
           );
         }
-      }
-
-      // Fire onUpdate only while a request is in-flight so transformMessage
-      // can track cardSurfaceIds. Skip after stream ends to avoid stale callback.
-      if (request.isRequesting) {
-        request.options.callbacks?.onUpdate?.(
-          { type: "card-command", command },
-          new Headers()
-        );
       }
     });
 
