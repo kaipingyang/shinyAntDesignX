@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Language
 
-**所有回复必须使用中文（简体）。** 代码、命令、文件路径、技术术语保持英文原样。
+**CRITICAL: 所有回复必须使用中文（简体）。代码、命令、文件路径保持英文。禁止韩语。**
 
 ## CRITICAL: 参考文档强制规则
 
