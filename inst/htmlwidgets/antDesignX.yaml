@@ -8,7 +8,7 @@ dependencies:
     src: www/lib/react-dom
     script: react-dom.production.min.js
   - name: dayjs
-    version: 1.11.0
+    version: 1.11.20
     src: www/lib/dayjs
     script: dayjs.min.js
   - name: antd-cssinjs
@@ -16,15 +16,15 @@ dependencies:
     src: www/lib/antd-cssinjs
     script: cssinjs.min.js
   - name: antd-icons
-    version: 5.0.0
+    version: 5.6.1
     src: www/lib/antd-icons
     script: index.umd.min.js
   - name: antd
-    version: 5.0.0
+    version: 6.4.2
     src: www/lib/antd
     script: antd.min.js
   - name: antdx
-    version: 1.0.0
+    version: 2.7.0
     src: www/lib/antdx
     script: antdx.min.js
   - name: x-sdk-vendor
@@ -32,12 +32,12 @@ dependencies:
     src: www
     script: vendor.js
   - name: x-markdown
-    version: 1.0.0
+    version: 2.7.0
     src: www/lib/x-markdown
     script: x-markdown.js
     stylesheet: x-markdown.css
   - name: x-card
-    version: 1.0.0
+    version: 2.7.0
     src: www/lib/x-card
     script: x-card.min.js
   - name: shinyAntDesignX
