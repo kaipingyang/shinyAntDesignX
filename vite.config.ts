@@ -30,10 +30,15 @@ const entryMap: Record<string, string> = {
 const entryFile = entryMap[entry];
 if (!entryFile) throw new Error(`Unknown WIDGET_ENTRY: ${entry}`);
 
-// vendor bundle: include everything, no externals
+// vendor (x-sdk only): x-sdk has no UMD build, must be bundled
 const isVendor = entry === "vendor";
 
-const externals = isVendor ? [] : [
+const externals = isVendor ? [
+  // x-sdk vendor only needs react as external (react is loaded separately)
+  "react",
+  "react-dom",
+  "react-dom/client",
+] : [
   "react",
   "react-dom",
   "react-dom/client",
@@ -45,16 +50,21 @@ const externals = isVendor ? [] : [
   "@ant-design/icons",
 ];
 
+// globals match actual window variable names from each UMD file:
+// react → window.React, react-dom → window.ReactDOM
+// antd → window.antd, @ant-design/x → window.antdx
+// @ant-design/icons → window.icons, @ant-design/x-markdown → window.XMarkdown
+// @ant-design/x-card → window.XCard, @ant-design/x-sdk → window.AntDesignXSdk
 const globals: Record<string, string> = {
-  "react":                  "window.React",
-  "react-dom":              "window.ReactDOM",
-  "react-dom/client":       "window.ReactDOM",
-  "antd":                   "window.antd",
-  "@ant-design/x":          "window.AntDesignX",
-  "@ant-design/x-markdown": "window.AntDesignXMarkdown",
-  "@ant-design/x-card":     "window.AntDesignXCard",
-  "@ant-design/x-sdk":      "window.AntDesignXSdk",
-  "@ant-design/icons":      "window.AntDesignIcons",
+  "react":                  "React",
+  "react-dom":              "ReactDOM",
+  "react-dom/client":       "ReactDOM",
+  "antd":                   "antd",
+  "@ant-design/x":          "antdx",
+  "@ant-design/x-markdown": "XMarkdown",
+  "@ant-design/x-card":     "XCard",
+  "@ant-design/x-sdk":      "AntDesignXSdk",
+  "@ant-design/icons":      "icons",
 };
 
 export default defineConfig({
