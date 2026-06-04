@@ -5,6 +5,7 @@ import { resolve } from "path";
 const entry = process.env.WIDGET_ENTRY || "antDesignX";
 
 const entryMap: Record<string, string> = {
+  vendor:          "srcjs/vendor.ts",
   antDesignX:      "srcjs/index.tsx",
   xmarkdown:       "srcjs/widgets/xmarkdown/index.tsx",
   codeHighlighter: "srcjs/widgets/codeHighlighter/index.tsx",
@@ -29,6 +30,33 @@ const entryMap: Record<string, string> = {
 const entryFile = entryMap[entry];
 if (!entryFile) throw new Error(`Unknown WIDGET_ENTRY: ${entry}`);
 
+// vendor bundle: include everything, no externals
+const isVendor = entry === "vendor";
+
+const externals = isVendor ? [] : [
+  "react",
+  "react-dom",
+  "react-dom/client",
+  "antd",
+  "@ant-design/x",
+  "@ant-design/x-markdown",
+  "@ant-design/x-card",
+  "@ant-design/x-sdk",
+  "@ant-design/icons",
+];
+
+const globals: Record<string, string> = {
+  "react":                  "window.React",
+  "react-dom":              "window.ReactDOM",
+  "react-dom/client":       "window.ReactDOM",
+  "antd":                   "window.antd",
+  "@ant-design/x":          "window.AntDesignX",
+  "@ant-design/x-markdown": "window.AntDesignXMarkdown",
+  "@ant-design/x-card":     "window.AntDesignXCard",
+  "@ant-design/x-sdk":      "window.AntDesignXSdk",
+  "@ant-design/icons":      "window.AntDesignIcons",
+};
+
 export default defineConfig({
   plugins: [react()],
   define: {
@@ -45,8 +73,10 @@ export default defineConfig({
     emptyOutDir: false,
     cssCodeSplit: false,
     rollupOptions: {
+      external: externals,
       output: {
         assetFileNames: `${entry}.css`,
+        globals,
       },
     },
   },

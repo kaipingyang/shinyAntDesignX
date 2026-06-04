@@ -1,6 +1,11 @@
 dependencies:
+  - name: vendor
+    version: 1.0.0
+    src: www
+    script: vendor.js
+    stylesheet: vendor.css
   - name: bubbleList
-    version: 0.1.0
+    version: 0.2.0
     src: www
     script: bubbleList.js
     stylesheet: bubbleList.css

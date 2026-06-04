@@ -6,6 +6,7 @@ const NODE = "/home/kaiping.yang/.nvm/versions/node/v24.15.0/bin/node";
 const VITE = "./node_modules/.bin/vite";
 
 const widgets = [
+  "vendor",
   "antDesignX", "xmarkdown", "codeHighlighter", "mermaid", "thoughtChain",
   "sender", "think", "welcome", "prompts", "bubbleList",
   "actions", "sources", "fileCard", "folder", "conversations",
