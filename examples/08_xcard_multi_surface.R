@@ -182,9 +182,6 @@ server <- function(input, output, session) {
       region <- act$context$region$value %||% "全国"
       period <- act$context$period$value %||% "本月"
 
-      # createSurface required — result-card may have been deleted by deleteSurface.
-      # Without it the XCard.Card DOM node is absent and updateComponents renders nothing.
-      ctrl$send_card_command(xcard_create_surface("result-card"), thread_id = "default")
       ctrl$send_card_command(
         xcard_update_components("result-card",
           make_result_card_data(region, period)),
