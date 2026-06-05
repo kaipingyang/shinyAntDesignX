@@ -67,6 +67,8 @@ const customTheme = {
     fontSize: 13,
     lineHeight: 1.6,
   },
+  // R: TRUE/FALSE/NA/NULL map to boolean token which is red in nightOwl — remap to orange
+  'boolean': { color: 'rgb(247, 140, 108)' },
 };
 
 const PresetCodeBlock: React.FC<ComponentProps> = ({ children, lang, block }) => {
