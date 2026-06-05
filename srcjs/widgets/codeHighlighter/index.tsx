@@ -93,7 +93,7 @@ function CodeHighlighterWidget({ code, lang, showHeader = true }: CodeHighlighte
             language={useLang}
             style={customTheme}
             wrapLines={true}
-            codeTagProps={{ style: { background: "transparent" } }}
+            codeTagProps={{ style: { background: "transparent", color: "inherit" } }}
             PreTag="div"
           >
             {code.replace(/\n$/, "")}

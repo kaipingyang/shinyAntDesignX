@@ -109,7 +109,7 @@ const PresetCodeBlock: React.FC<ComponentProps> = ({ children, lang, block }) =>
           language={useLang}
           style={customTheme}
           wrapLines={true}
-          codeTagProps={{ style: { background: "transparent" } }}
+          codeTagProps={{ style: { background: "transparent", color: "inherit" } }}
           PreTag="div"
         >
           {code}
