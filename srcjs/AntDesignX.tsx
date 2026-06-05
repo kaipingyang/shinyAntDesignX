@@ -274,6 +274,18 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
         const sid = (command as any).deleteSurface?.surfaceId;
         if (sid) {
           activeSurfaceIdsRef.current.delete(sid);
+          // Purge all prior commands for this surfaceId from the queue so that
+          // a future createSurface for the same id starts from a clean slate.
+          // Without this, XCard.Box replays the old deleteSurface on every new
+          // updateComponents command, permanently hiding the surface.
+          cardCommandQueueRef.current = cardCommandQueueRef.current.filter((cmd: any) => {
+            const cmdSid =
+              cmd.createSurface?.surfaceId ??
+              cmd.updateComponents?.surfaceId ??
+              cmd.updateDataModel?.surfaceId ??
+              cmd.deleteSurface?.surfaceId;
+            return cmdSid !== sid;
+          });
           setMessagesRef.current((all) =>
             all.map((mi) => {
               if (!mi.message.cardSurfaceIds?.includes(sid)) return mi;
