@@ -261,14 +261,28 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
         const sid = (command as any).createSurface?.surfaceId;
         if (sid) {
           activeSurfaceIdsRef.current.add(sid);
-          // Always buffer — useEffect([messages]) flushes pending surfaceIds
-          // onto the latest assistant message as soon as it appears.
-          // This handles both cases: createSurface before or after on_chunk.
           if (!pendingSurfaceIdsRef.current.includes(sid)) {
             pendingSurfaceIdsRef.current.push(sid);
-            // Trigger the flush effect by bumping version
-            setCardCommandVersion((v) => v);  // no-op bump; effect watches messages not version
           }
+          // Also try direct attach to latest assistant message in case it already
+          // exists (re-creation after deleteSurface — no new message arrives to
+          // trigger the useEffect([messages]) flush path).
+          setMessagesRef.current((all) => {
+            let lastAssistantIdx = -1;
+            for (let i = all.length - 1; i >= 0; i--) {
+              if (all[i].message.role === "assistant") { lastAssistantIdx = i; break; }
+            }
+            if (lastAssistantIdx < 0) return all;
+            const target = all[lastAssistantIdx];
+            if (target.message.cardSurfaceIds?.includes(sid)) return all;
+            return all.map((m, i) => i !== lastAssistantIdx ? m : {
+              ...m,
+              message: {
+                ...m.message,
+                cardSurfaceIds: [...(m.message.cardSurfaceIds ?? []), sid],
+              },
+            });
+          });
         }
       } else if ("deleteSurface" in command) {
         const sid = (command as any).deleteSurface?.surfaceId;
