@@ -14,7 +14,7 @@ import sql from "highlight.js/lib/languages/sql";
 import json from "highlight.js/lib/languages/json";
 import xml from "highlight.js/lib/languages/xml";   // covers html
 import css from "highlight.js/lib/languages/css";
-import "highlight.js/styles/github.css";
+import "highlight.js/styles/atom-one-dark.css";
 import type { CSSProperties } from "react";
 
 hljs.registerLanguage("r", r);
@@ -70,7 +70,7 @@ const PresetCodeBlock: React.FC<ComponentProps> = ({ children, lang, block }) =>
   return (
     <div style={{
       borderRadius: 6,
-      border: "1px solid #e8eaed",
+      border: "1px solid #373b41",
       marginBottom: 12,
       overflow: "hidden",
       fontSize: 13,
@@ -80,15 +80,15 @@ const PresetCodeBlock: React.FC<ComponentProps> = ({ children, lang, block }) =>
         alignItems: "center",
         justifyContent: "space-between",
         padding: "4px 12px",
-        background: "#f6f8fa",
-        borderBottom: "1px solid #e8eaed",
+        background: "#21252b",
+        borderBottom: "1px solid #373b41",
         minHeight: 32,
       }}>
-        <span style={{ fontSize: 11, color: "#6b7280", fontFamily: "monospace" }}>
+        <span style={{ fontSize: 11, color: "#abb2bf", fontFamily: "monospace" }}>
           {lang ?? ""}
         </span>
       </div>
-      <pre style={{ margin: 0, padding: "12px 16px", background: "#fff", overflow: "auto", lineHeight: 1.6 }}>
+      <pre style={{ margin: 0, padding: "12px 16px", background: "#282c34", overflow: "auto", lineHeight: 1.6 }}>
         <code ref={codeRef} className={lang ? `language-${lang}` : undefined} />
       </pre>
     </div>
