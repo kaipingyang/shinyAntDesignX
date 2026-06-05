@@ -131,7 +131,7 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
         }
       )
     );
-  }, [messages, cardCommandVersion]);
+  }, [messages]);
 
   // ── xCard config ──────────────────────────────────────────────────────────
   const xcardMode = config.xcard_mode ?? "inline";
@@ -150,6 +150,36 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   // surfaceIds waiting to be attached to the next assistant message
   // (createSurface may arrive before the assistant message is created)
   const pendingSurfaceIdsRef = useRef<string[]>([]);
+
+  // Flush pending surfaceIds when a new createSurface arrives without a new message
+  // (e.g. R sends createSurface from observeEvent — no on_chunk, so [messages] alone
+  // wouldn't re-trigger the flush above).
+  useEffect(() => {
+    if (pendingSurfaceIdsRef.current.length === 0) return;
+    let lastAssistantIdx = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].message.role === "assistant") { lastAssistantIdx = i; break; }
+    }
+    if (lastAssistantIdx < 0) return;
+    const toAttach = pendingSurfaceIdsRef.current.filter(
+      (sid) => !messages[lastAssistantIdx].message.cardSurfaceIds?.includes(sid)
+    );
+    if (toAttach.length === 0) { pendingSurfaceIdsRef.current = []; return; }
+    pendingSurfaceIdsRef.current = [];
+    const targetId = messages[lastAssistantIdx].id;
+    setMessagesRef.current((all) =>
+      all.map((m) =>
+        m.id !== targetId ? m : {
+          ...m,
+          message: {
+            ...m.message,
+            cardSurfaceIds: [...new Set([...(m.message.cardSurfaceIds ?? []), ...toAttach])],
+          },
+        }
+      )
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardCommandVersion]);
 
   // ── tool result + approval (extracted to hook) ───────────────────────────
   const { sendToolApproval } = useToolSideChannel(request, bridge, setMessagesRef);
