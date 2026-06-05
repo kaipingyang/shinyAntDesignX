@@ -44,9 +44,12 @@ antDesignXMarkdownOutput <- function(outputId, width = "100%", height = "auto", 
 #'   * `components` — Named list mapping HTML tag names to preset component names.
 #'     Replaces the default rendering of that HTML element with a built-in styled component.
 #'     Available presets:
-#'     - `"CodeBlock"` — Block code (`code` with `block=TRUE`): uses `@ant-design/x`
-#'       `CodeHighlighter` for syntax-highlighted display with language label and copy
-#'       button. Map to tag `"code"`.
+#'     - `"CodeBlock"` — Block code (`code` with `block=TRUE`): syntax-highlighted with
+#'       PrismLight (`react-syntax-highlighter`) bundled directly in this widget.
+#'       Supported languages: `r`/`R`, `python`, `javascript`/`js`, `typescript`/`ts`,
+#'       `bash`/`shell`/`sh`, `sql`, `json`, `html`/`xml`, `css`,
+#'       `jsx`, `tsx`, `yaml`/`yml`. Theme: One Dark.
+#'       Map to tag `"code"`. Note: does **not** use `@ant-design/x` `CodeHighlighter`.
 #'     - `"InlineCode"` — Inline `code`: renders with antd `Typography.Text code` styling.
 #'       Map to tag `"code"` (XMarkdown passes `block=FALSE` for inline code).
 #'     - `"ExternalLink"` — Anchor `a`: renders with antd `Typography.Link` + `↗` icon;

@@ -15,21 +15,32 @@ import sqlLang from "refractor/sql";
 import jsonLang from "refractor/json";
 import markupLang from "refractor/markup";
 import cssLang from "refractor/css";
+import jsxLang from "refractor/jsx";
+import tsxLang from "refractor/tsx";
+import yamlLang from "refractor/yaml";
 import type { CSSProperties } from "react";
 
 // Register all languages into our own PrismLight instance
 SyntaxHighlighter.registerLanguage("r", rLang);
 SyntaxHighlighter.registerLanguage("R", rLang);
 SyntaxHighlighter.registerLanguage("python", pythonLang);
+SyntaxHighlighter.registerLanguage("py", pythonLang);
 SyntaxHighlighter.registerLanguage("javascript", javascriptLang);
+SyntaxHighlighter.registerLanguage("js", javascriptLang);
 SyntaxHighlighter.registerLanguage("typescript", typescriptLang);
+SyntaxHighlighter.registerLanguage("ts", typescriptLang);
 SyntaxHighlighter.registerLanguage("bash", bashLang);
 SyntaxHighlighter.registerLanguage("shell", bashLang);
+SyntaxHighlighter.registerLanguage("sh", bashLang);
 SyntaxHighlighter.registerLanguage("sql", sqlLang);
 SyntaxHighlighter.registerLanguage("json", jsonLang);
 SyntaxHighlighter.registerLanguage("html", markupLang);
 SyntaxHighlighter.registerLanguage("xml", markupLang);
 SyntaxHighlighter.registerLanguage("css", cssLang);
+SyntaxHighlighter.registerLanguage("jsx", jsxLang);
+SyntaxHighlighter.registerLanguage("tsx", tsxLang);
+SyntaxHighlighter.registerLanguage("yaml", yamlLang);
+SyntaxHighlighter.registerLanguage("yml", yamlLang);
 
 // @ts-ignore
 declare const HTMLWidgets: any;
@@ -63,7 +74,11 @@ const PresetCodeBlock: React.FC<ComponentProps> = ({ children, lang, block }) =>
 
   const code = extractText(children).replace(/\n$/, "");
   const normalizedLang = lang?.toLowerCase();
-  const supportedLangs = ["r", "python", "javascript", "typescript", "bash", "shell", "sql", "json", "html", "xml", "css"];
+  const supportedLangs = [
+    "r", "python", "py", "javascript", "js", "typescript", "ts",
+    "bash", "shell", "sh", "sql", "json", "html", "xml", "css",
+    "jsx", "tsx", "yaml", "yml",
+  ];
   const useLang = normalizedLang && supportedLangs.includes(normalizedLang) ? normalizedLang : undefined;
 
   return (
@@ -112,20 +127,23 @@ const PresetInlineCode: React.FC<ComponentProps> = ({ children }) => (
 
 const PresetExternalLink: React.FC<ComponentProps & { href?: string; target?: string }> = ({
   children, href, target, domNode: _domNode, streamStatus: _ss, lang: _lang, block: _block, ...rest
-}) => (
-  <a
-    href={href}
-    target={target ?? "_blank"}
-    rel="noopener noreferrer"
-    style={{ color: "#1677ff", textDecoration: "underline" }}
-    {...rest}
-  >
-    {children}
-    {(!target || target === "_blank") && (
-      <span style={{ fontSize: "0.75em", marginLeft: 2, opacity: 0.6 }}>↗</span>
-    )}
-  </a>
-);
+}) => {
+  const opensNewTab = target === "_blank";
+  return (
+    <a
+      href={href}
+      target={target}
+      rel={opensNewTab ? "noopener noreferrer" : undefined}
+      style={{ color: "#1677ff", textDecoration: "underline" }}
+      {...rest}
+    >
+      {children}
+      {opensNewTab && (
+        <span style={{ fontSize: "0.75em", marginLeft: 2, opacity: 0.6 }}>↗</span>
+      )}
+    </a>
+  );
+};
 
 // Registry: preset name → component
 const PRESET_REGISTRY: Record<string, React.ComponentType<any>> = {
