@@ -102,37 +102,35 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   queueRequestRef.current = queueRequest;
 
   // ── flush pending surfaceIds onto the latest assistant message ────────────
-  // Case A: createSurface arrives BEFORE on_chunk — no message yet.
-  // Buffer in pending; this effect flushes when messages changes (on_chunk).
-  // Case B: createSurface arrives AFTER message exists (e.g. observeEvent).
-  // onCardCommand already called setMessages directly; pending is also set as
-  // safety and this effect deduplicates via includes() check.
+  // createSurface commands may arrive before the assistant message is created
+  // (R sends them before on_chunk). Buffer them and flush when assistant appears.
   useEffect(() => {
     if (pendingSurfaceIdsRef.current.length === 0) return;
-    const toFlush = [...pendingSurfaceIdsRef.current];
+    // Find last assistant message
+    let lastAssistantIdx = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].message.role === "assistant") { lastAssistantIdx = i; break; }
+    }
+    if (lastAssistantIdx < 0) return;
+
+    const toAttach = pendingSurfaceIdsRef.current.filter(
+      (sid) => !messages[lastAssistantIdx].message.cardSurfaceIds?.includes(sid)
+    );
+    if (toAttach.length === 0) { pendingSurfaceIdsRef.current = []; return; }
+
     pendingSurfaceIdsRef.current = [];
-    setMessagesRef.current((all) => {
-      let lastAssistantIdx = -1;
-      for (let i = all.length - 1; i >= 0; i--) {
-        if (all[i].message.role === "assistant") { lastAssistantIdx = i; break; }
-      }
-      if (lastAssistantIdx < 0) {
-        pendingSurfaceIdsRef.current = toFlush; // restore for next trigger
-        return all;
-      }
-      const target = all[lastAssistantIdx];
-      const toAttach = toFlush.filter(
-        (sid) => !target.message.cardSurfaceIds?.includes(sid)
-      );
-      if (toAttach.length === 0) return all;
-      return all.map((m, i) => i !== lastAssistantIdx ? m : {
-        ...m,
-        message: {
-          ...m.message,
-          cardSurfaceIds: [...new Set([...(m.message.cardSurfaceIds ?? []), ...toAttach])],
-        },
-      });
-    });
+    const targetId = messages[lastAssistantIdx].id;
+    setMessagesRef.current((all) =>
+      all.map((m) =>
+        m.id !== targetId ? m : {
+          ...m,
+          message: {
+            ...m.message,
+            cardSurfaceIds: [...new Set([...(m.message.cardSurfaceIds ?? []), ...toAttach])],
+          },
+        }
+      )
+    );
   }, [messages]);
 
   // ── xCard config ──────────────────────────────────────────────────────────
@@ -263,44 +261,19 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
         const sid = (command as any).createSurface?.surfaceId;
         if (sid) {
           activeSurfaceIdsRef.current.add(sid);
-          // Try to attach directly to the latest assistant message via functional
-          // update (reads fresh state at commit time, not stale closure).
-          // If no assistant message exists yet, buffer in pending — the [messages]
-          // effect will flush it when the first on_chunk arrives.
-          let attached = false;
-          setMessagesRef.current((all) => {
-            let lastAssistantIdx = -1;
-            for (let i = all.length - 1; i >= 0; i--) {
-              if (all[i].message.role === "assistant") { lastAssistantIdx = i; break; }
-            }
-            if (lastAssistantIdx < 0) return all; // no message yet — fall through to pending
-            const target = all[lastAssistantIdx];
-            if (target.message.cardSurfaceIds?.includes(sid)) {
-              attached = true;
-              return all; // already there
-            }
-            attached = true;
-            return all.map((m, i) => i !== lastAssistantIdx ? m : {
-              ...m,
-              message: {
-                ...m.message,
-                cardSurfaceIds: [...(m.message.cardSurfaceIds ?? []), sid],
-              },
-            });
-          });
-          // setMessages is async-enqueued — we can't read `attached` synchronously.
-          // Always also buffer in pending so [messages] effect handles the case
-          // where no assistant message existed at setMessages commit time.
+          // Always buffer — useEffect([messages]) flushes pending surfaceIds
+          // onto the latest assistant message as soon as it appears.
+          // This handles both cases: createSurface before or after on_chunk.
           if (!pendingSurfaceIdsRef.current.includes(sid)) {
             pendingSurfaceIdsRef.current.push(sid);
+            // Trigger the flush effect by bumping version
+            setCardCommandVersion((v) => v);  // no-op bump; effect watches messages not version
           }
         }
       } else if ("deleteSurface" in command) {
         const sid = (command as any).deleteSurface?.surfaceId;
         if (sid) {
           activeSurfaceIdsRef.current.delete(sid);
-          // Also clear from pending so a subsequent createSurface can re-add it
-          pendingSurfaceIdsRef.current = pendingSurfaceIdsRef.current.filter((s) => s !== sid);
           setMessagesRef.current((all) =>
             all.map((mi) => {
               if (!mi.message.cardSurfaceIds?.includes(sid)) return mi;
