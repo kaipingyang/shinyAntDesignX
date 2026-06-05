@@ -13,17 +13,17 @@ mtcars |>
   labs(title = \'6缸车平均油耗\')'
 
 ui <- fluidPage(
-  tags$h3("1. antdx UMD CodeHighlighter — lang='r'"),
+  tags$h3("1. codeHighlighter widget — lang='r'（PrismLight + nightOwl）"),
   antDesignXCodeHighlighterOutput("ch_r",    height = "auto"),
   tags$hr(),
-  tags$h3("2. antdx UMD CodeHighlighter — lang='R'（大写）"),
+  tags$h3("2. codeHighlighter widget — lang='R'（大写，同 lang='r'）"),
   antDesignXCodeHighlighterOutput("ch_R",    height = "auto"),
   tags$hr(),
-  tags$h3("3. antdx UMD CodeHighlighter — lang=NULL（无语言）"),
+  tags$h3("3. codeHighlighter widget — lang=NULL（无语言，纯文本）"),
   antDesignXCodeHighlighterOutput("ch_null", height = "auto"),
   tags$hr(),
   tags$h3("4. xmarkdown PrismLight CodeBlock — lang 由 fence 决定（```r）"),
-  antDesignXMarkdownOutput("md_hljs", height = "auto")
+  antDesignXMarkdownOutput("md_prism", height = "auto")
 )
 
 server <- function(input, output, session) {
@@ -31,7 +31,7 @@ server <- function(input, output, session) {
   output$ch_R    <- renderAntDesignXCodeHighlighter({ list(code = R_CODE, lang = "R") })
   output$ch_null <- renderAntDesignXCodeHighlighter({ list(code = R_CODE) })
 
-  output$md_hljs <- renderAntDesignXMarkdown({
+  output$md_prism <- renderAntDesignXMarkdown({
     list(
       content    = paste0("```r\n", R_CODE, "\n```"),
       components = list(code = "CodeBlock")

@@ -95,7 +95,7 @@ ui <- page_fillable(
         # components presets ──────────────────────────────────────────────────
         div(class = "ctrl-section",
           div(class = "ctrl-label", "components 预设"),
-          checkboxInput("preset_codeblock",  "code → CodeBlock（PrismLight 静态高亮，oneDark 主题）", value = FALSE),
+          checkboxInput("preset_codeblock",  "code → CodeBlock（PrismLight 静态高亮，nightOwl 主题）", value = FALSE),
           checkboxInput("preset_inlinecode", "code → InlineCode（antd Typography.Text）", value = FALSE),
           checkboxInput("preset_externallink", "a → ExternalLink（↗ 图标 + 新标签）",    value = FALSE),
           tags$small("注：CodeBlock 与 InlineCode 同映射 'code'，只能选一个", style = "color:#9ca3af;font-size:10px;")

@@ -1,6 +1,8 @@
 #' Code Highlighter Output Widget
 #'
-#' Renders syntax-highlighted code using Ant Design X's CodeHighlighter component.
+#' Renders syntax-highlighted code using PrismLight (react-syntax-highlighter)
+#' with Night Owl theme. Supported languages: r/R, python/py, javascript/js,
+#' typescript/ts, bash/shell/sh, sql, json, html/xml, css, jsx, tsx, yaml/yml.
 #'
 #' @param outputId Output variable to read from.
 #' @param width,height CSS width and height.
