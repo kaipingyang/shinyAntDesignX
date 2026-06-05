@@ -27,7 +27,7 @@ registerCatalog(SHINY_DEFAULT_CATALOG);
 
 interface XCardWidgetProps {
   inputId?: string;
-  surfaceId: string;
+  surfaceId: string | string[];
   commands: XAgentCommand_v0_9[];
   catalog?: Catalog;
 }
@@ -37,6 +37,8 @@ function XCardWidget({ inputId, surfaceId, commands, catalog }: XCardWidgetProps
   useMemo(() => {
     if (catalog) registerCatalog(catalog);
   }, [catalog]);
+
+  const surfaceIds = Array.isArray(surfaceId) ? surfaceId : [surfaceId];
 
   const handleAction = useCallback((payload: ActionPayload) => {
     if (inputId) {
@@ -57,7 +59,7 @@ function XCardWidget({ inputId, surfaceId, commands, catalog }: XCardWidgetProps
           onAction={handleAction}
           components={SHINY_DEFAULT_COMPONENTS}
         >
-          <XCard.Card id={surfaceId} />
+          {surfaceIds.map((id) => <XCard.Card key={id} id={id} />)}
         </XCard.Box>
       </ConfigProvider>
     </ErrorBoundary>

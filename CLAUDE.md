@@ -126,7 +126,7 @@ R server: `antDesignXServer(id, handler, ...)` — handler receives `on_chunk / 
 | Welcome | `antDesignXWelcomeOutput` | `renderAntDesignXWelcome` |
 | Prompts | `antDesignXPromptsOutput` | `renderAntDesignXPrompts` |
 | Notification | `antDesignXNotificationOutput` | `renderAntDesignXNotification` |
-| XCard | `antDesignXCardOutput` | `renderAntDesignXCard` + `xcard_create_surface()` / `xcard_update_components()` / `xcard_update_data()` |
+| XCard | `antDesignXCardOutput` | `renderAntDesignXCard` + `xcard_create_surface()` / `xcard_update_components()` / `xcard_update_data()` / `xcard_delete_surface()` |
 
 ## Reference docs
 

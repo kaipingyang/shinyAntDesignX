@@ -34,7 +34,8 @@ export const SHINY_DEFAULT_CATALOG: Catalog = {
     Text: {
       props: {
         text:    { type: "string" },
-        variant: { type: "string", enum: ["h1", "h2", "h3", "body"] },
+        variant: { type: "string", enum: ["h1", "h2", "h3", "body", "success", "warning", "danger", "secondary"] },
+        status:  { type: "string", enum: ["success", "warning", "danger", "secondary"] },
       },
     },
     Button: {
@@ -59,6 +60,8 @@ export const SHINY_DEFAULT_CATALOG: Catalog = {
         label:        { type: "string" },
         options:      { type: "array" },
         defaultValue: { type: "string" },
+        value:        { type: "string" },
+        dataPath:     { type: "string" },
         action:       { type: "object" },
       },
     },
@@ -243,15 +246,20 @@ export const SHINY_DEFAULT_CATALOG: Catalog = {
 
 export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> = {
   // ── 基础 ────────────────────────────────────────────────────────────────────
-  Text: ({ text, variant, children }: { text?: string; variant?: string; children?: React.ReactNode }) => {
+  Text: ({ text, variant, status, children }: { text?: string; variant?: string; status?: string; children?: React.ReactNode }) => {
     const content = text ?? children;
+    const effectiveStatus = status ?? variant;
     const styleMap: Record<string, React.CSSProperties> = {
-      h1:   { fontSize: 20, fontWeight: 700, margin: "0 0 12px" },
-      h2:   { fontSize: 17, fontWeight: 600, margin: "0 0 8px" },
-      h3:   { fontSize: 15, fontWeight: 600, margin: "0 0 6px" },
-      body: { fontSize: 14, margin: 0 },
+      h1:        { fontSize: 20, fontWeight: 700, margin: "0 0 12px" },
+      h2:        { fontSize: 17, fontWeight: 600, margin: "0 0 8px" },
+      h3:        { fontSize: 15, fontWeight: 600, margin: "0 0 6px" },
+      body:      { fontSize: 14, margin: 0 },
+      success:   { fontSize: 14, margin: 0, color: "#52c41a" },
+      warning:   { fontSize: 14, margin: 0, color: "#faad14" },
+      danger:    { fontSize: 14, margin: 0, color: "#ff4d4f" },
+      secondary: { fontSize: 14, margin: 0, color: "#8c8c8c" },
     };
-    return <p style={styleMap[variant ?? "body"] ?? styleMap.body}>{content}</p>;
+    return <p style={styleMap[effectiveStatus ?? "body"] ?? styleMap.body}>{content}</p>;
   },
 
   Button: ({ label, variant = "default", disabled, action, onAction }: any) => (
@@ -283,17 +291,41 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     </div>
   ),
 
-  Select: ({ label, options = [], defaultValue, action, onAction }: any) => (
-    <div style={{ marginBottom: 8 }}>
-      {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
-      <Select
-        defaultValue={defaultValue}
-        options={(options as string[]).map((o) => ({ value: o, label: o }))}
-        style={{ width: "100%" }}
-        onChange={(v) => { if (action?.event && onAction) onAction(action.event.name, { ...action.event.context, value: v }); }}
-      />
-    </div>
-  ),
+  // Select supports both action mode (fires onAction) and dataPath mode (two-way binding).
+  // Uses useRef + forceUpdate pattern (same as RadioGroup) to prevent commandQueue
+  // replay from resetting the selection after user interaction.
+  Select: ({ label, options = [], defaultValue, value, dataPath, action, onAction, onDataChange }: any) => {
+    const selectedRef = React.useRef<string | undefined>(undefined);
+    const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
+
+    if (selectedRef.current === undefined) {
+      selectedRef.current = value ?? defaultValue;
+    }
+
+    React.useEffect(() => {
+      if (dataPath && onDataChange && selectedRef.current !== undefined) {
+        onDataChange(dataPath, selectedRef.current);
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    return (
+      <div style={{ marginBottom: 8 }}>
+        {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
+        <Select
+          value={selectedRef.current}
+          options={(options as string[]).map((o) => ({ value: o, label: o }))}
+          style={{ width: "100%" }}
+          onChange={(v) => {
+            selectedRef.current = v;
+            forceUpdate();
+            if (dataPath && onDataChange) onDataChange(dataPath, v);
+            if (action?.event && onAction) onAction(action.event.name, { ...action.event.context, value: v });
+          }}
+        />
+      </div>
+    );
+  },
 
   Tag: ({ text, color }: any) => <Tag color={color}>{text}</Tag>,
 
@@ -441,11 +473,9 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     }
 
     React.useEffect(() => {
-      console.log('[RadioGroup] MOUNTED #', mountCountRef.current, 'value:', value, 'selected:', selectedRef.current);
       if (dataPath && onDataChange && selectedRef.current !== undefined) {
         onDataChange(dataPath, selectedRef.current);
       }
-      return () => console.log('[RadioGroup] UNMOUNTED');
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -455,7 +485,6 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
         <Radio.Group
           value={selectedRef.current}
           onChange={(e) => {
-            console.log('[RadioGroup] onChange:', e.target.value);
             selectedRef.current = e.target.value;
             forceUpdate();
             if (dataPath && onDataChange) onDataChange(dataPath, e.target.value);

@@ -17,12 +17,11 @@ antDesignXCardOutput <- function(outputId, width = "100%", height = "auto", ...)
 #'
 #' @param expr A list with:
 #'   * `inputId` — Shiny input ID for action events. Emits `list(name, surfaceId, context)`.
-#'   * `surfaceId` — the surface/card ID string.
+#'   * `surfaceId` — surface ID string, or character vector for multiple surfaces.
 #'   * `commands` — list of A2UI v0.9 command objects. Each command is a named list.
-#'     Build with [xcard_create_surface()], [xcard_update_components()], [xcard_update_data()].
+#'     Build with [xcard_create_surface()], [xcard_update_components()],
+#'     [xcard_update_data()], [xcard_delete_surface()].
 #'   * `catalog` — optional named list defining custom component schemas.
-#'
-#' Built-in components: `Text`, `Button`, `Input`, `Select`, `Tag`.
 #'
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
@@ -58,4 +57,15 @@ xcard_update_components <- function(surface_id, components) {
 #' @export
 xcard_update_data <- function(surface_id, path, value) {
   list(version = "v0.9", updateDataModel = list(surfaceId = surface_id, path = path, value = value))
+}
+
+#' Build A2UI deleteSurface command
+#'
+#' Removes the surface and resets its component tree and data model.
+#' Use when you want to fully clear a card and start fresh.
+#'
+#' @param surface_id Surface ID string.
+#' @export
+xcard_delete_surface <- function(surface_id) {
+  list(version = "v0.9", deleteSurface = list(surfaceId = surface_id))
 }
