@@ -12,7 +12,7 @@ dependencies:
     src: www/lib/dayjs
     script: dayjs.min.js
   - name: antd-cssinjs
-    version: 1.0.0
+    version: 2.1.2
     src: www/lib/antd-cssinjs
     script: cssinjs.min.js
   - name: antd

@@ -52,6 +52,7 @@ const externals = isVendor ? [
 
 // globals match actual window variable names from each UMD file:
 // react → window.React, react-dom → window.ReactDOM
+// react-dom/client is a subpath of react-dom — no separate UMD, maps to same ReactDOM global
 // antd → window.antd, @ant-design/x → window.antdx
 // @ant-design/icons → window.icons, @ant-design/x-markdown → window.XMarkdown
 // @ant-design/x-card → window.XCard, @ant-design/x-sdk → window.AntDesignXSdk
