@@ -92,6 +92,9 @@ R server: `antDesignXServer(id, handler, ...)` — handler receives `on_chunk / 
 - `avatar` prop takes antd `<Avatar>` component, not `{ icon, children }` plain object
 - XMarkdown `config` prop must be referentially stable (use `useMemo`)
 - XMarkdown streaming: **must set `hasNextChunk: false` on final chunk** — leaving it `true` freezes incomplete syntax placeholders
+- XMarkdown widget `streaming` param accepts three forms: `FALSE` (no streaming), `TRUE` (shorthand: `hasNextChunk=TRUE, enableAnimation=TRUE`), or a named list with any subset of `hasNextChunk/enableAnimation/animationConfig/tail/incompleteMarkdownComponentMap`
+- XMarkdown widget does NOT support `components` (custom React components) or `config` (MarkedExtension) from R — these require JS-side code; omit from R API
+- XMarkdown `paragraphTag` default is `"p"`; set to `"div"` when custom components contain block-level elements to avoid HTML validation errors
 - Vite IIFE format doesn't support multiple entries in one config — each widget built separately via `WIDGET_ENTRY` env var
 - **xCard `dataPath` must NOT start with `/`** — `resolveValueV09` treats any string starting with `/` as a dataModel path and resolves it before the component receives it, destroying the path string. Use flat keys: `dataPath = "region"` not `dataPath = "/region"`.
 - **xCard `value = list(path = "...")` MUST start with `/`** — `isPathValue` only matches strings starting with `/`. Without leading `/`, the path string is returned as a literal and the component receives the path string itself instead of the dataModel value.
