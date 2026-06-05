@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from "react";
 import ReactDOM from "react-dom/client";
-import { XCard, registerCatalog } from "@ant-design/x-card";
+import { XCard, registerCatalog, clearCatalogCache, validateComponent, loadCatalog } from "@ant-design/x-card";
 import type { XAgentCommand_v0_9, Catalog, ActionPayload } from "@ant-design/x-card";
 import { ConfigProvider, theme as antdTheme } from "antd";
 import { SHINY_DEFAULT_CATALOG, SHINY_DEFAULT_COMPONENTS } from "../../xCardDefaults";
@@ -24,6 +24,32 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
 
 // Register default catalog once
 registerCatalog(SHINY_DEFAULT_CATALOG);
+
+// ── Global Shiny message handlers (registered once at module load) ──────────
+
+// xcard_clear_catalog_cache(): clears all registered catalogs from memory.
+// Use before re-registering an updated catalog in the same session.
+Shiny.addCustomMessageHandler("xcard:clearCatalogCache", (_msg: any) => {
+  clearCatalogCache();
+});
+
+// xcard_validate_component(): validates props against a registered catalog.
+// msg = { inputId, catalogId, component, props }
+// Result emitted to input$<inputId>: list(valid = TRUE/FALSE, errors = character())
+Shiny.addCustomMessageHandler("xcard:validateComponent", async (msg: any) => {
+  try {
+    const catalog = await loadCatalog(msg.catalogId ?? "shiny-default");
+    const valid = validateComponent(catalog, msg.component, msg.props ?? {});
+    if (msg.inputId) {
+      Shiny.setInputValue(msg.inputId, { valid, errors: [] }, { priority: "event" });
+    }
+  } catch (err) {
+    if (msg.inputId) {
+      Shiny.setInputValue(msg.inputId,
+        { valid: false, errors: [String(err)] }, { priority: "event" });
+    }
+  }
+});
 
 interface XCardWidgetProps {
   inputId?: string;

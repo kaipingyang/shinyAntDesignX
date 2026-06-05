@@ -69,3 +69,36 @@ xcard_update_data <- function(surface_id, path, value) {
 xcard_delete_surface <- function(surface_id) {
   list(version = "v0.9", deleteSurface = list(surfaceId = surface_id))
 }
+
+#' Clear all registered x-card catalogs from JS memory
+#'
+#' Useful when you need to re-register a modified catalog in the same session.
+#' Call before [xcard_register_catalog()] to ensure the new version takes effect.
+#'
+#' @param session Shiny session object.
+#' @export
+xcard_clear_catalog_cache <- function(session = shiny::getDefaultReactiveDomain()) {
+  session$sendCustomMessage("xcard:clearCatalogCache", list())
+}
+
+#' Validate component props against a registered catalog
+#'
+#' Sends a validation request to JS; result is emitted to `input$<input_id>`
+#' as `list(valid = TRUE/FALSE, errors = character())`.
+#'
+#' @param input_id Shiny input ID to receive the result.
+#' @param component Component name (e.g. `"Button"`).
+#' @param props Named list of props to validate.
+#' @param catalog_id Catalog ID to validate against (default `"shiny-default"`).
+#' @param session Shiny session object.
+#' @export
+xcard_validate_component <- function(input_id, component, props = list(),
+                                     catalog_id = "shiny-default",
+                                     session = shiny::getDefaultReactiveDomain()) {
+  session$sendCustomMessage("xcard:validateComponent", list(
+    inputId   = input_id,
+    catalogId = catalog_id,
+    component = component,
+    props     = props
+  ))
+}
