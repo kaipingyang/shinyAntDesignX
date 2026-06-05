@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { ThoughtChain, Think } from "@ant-design/x";
-import XMarkdown from "@ant-design/x-markdown";
+import { XMarkdown } from "@ant-design/x-markdown";
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
