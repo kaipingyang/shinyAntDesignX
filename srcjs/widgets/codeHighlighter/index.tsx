@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { ConfigProvider, theme as antdTheme } from "antd";
 import rLang from "refractor/r";
 import pythonLang from "refractor/python";
@@ -47,9 +47,9 @@ const SUPPORTED_LANGS = new Set([
 ]);
 
 const customTheme = {
-  ...vscDarkPlus,
+  ...nightOwl,
   'pre[class*="language-"]': {
-    ...(vscDarkPlus as any)['pre[class*="language-"]'],
+    ...(nightOwl as any)['pre[class*="language-"]'],
     margin: 0,
     borderRadius: 0,
     fontSize: 13,
@@ -70,18 +70,18 @@ function CodeHighlighterWidget({ code, lang, showHeader = true }: CodeHighlighte
 
   return (
     <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm }}>
-      <div style={{ borderRadius: 6, border: "1px solid #3c3c3c", overflow: "hidden", fontSize: 13 }}>
+      <div style={{ borderRadius: 6, border: "1px solid #1d3b53", overflow: "hidden", fontSize: 13 }}>
         {showHeader && (
           <div style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             padding: "4px 12px",
-            background: "#252526",
-            borderBottom: "1px solid #3c3c3c",
+            background: "#012840",
+            borderBottom: "1px solid #1d3b53",
             minHeight: 32,
           }}>
-            <span style={{ fontSize: 11, color: "#858585", fontFamily: "monospace" }}>
+            <span style={{ fontSize: 11, color: "#637777", fontFamily: "monospace" }}>
               {displayLang}
             </span>
           </div>
@@ -97,8 +97,8 @@ function CodeHighlighterWidget({ code, lang, showHeader = true }: CodeHighlighte
             {code.replace(/\n$/, "")}
           </SyntaxHighlighter>
         ) : (
-          <pre style={{ margin: 0, padding: "12px 16px", background: "#1e1e1e", overflow: "auto", lineHeight: 1.6 }}>
-            <code style={{ color: "#858585" }}>{code}</code>
+          <pre style={{ margin: 0, padding: "12px 16px", background: "#011627", overflow: "auto", lineHeight: 1.6 }}>
+            <code style={{ color: "#637777" }}>{code}</code>
           </pre>
         )}
       </div>

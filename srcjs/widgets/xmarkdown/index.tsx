@@ -5,7 +5,7 @@ import type { StreamingOption, ComponentProps } from "@ant-design/x-markdown";
 import "@ant-design/x-markdown/themes/light.css";
 import { ConfigProvider, theme as antdTheme, Typography } from "antd";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/prism";
 import rLang from "refractor/r";
 import pythonLang from "refractor/python";
 import javascriptLang from "refractor/javascript";
@@ -59,9 +59,9 @@ function extractText(children: React.ReactNode): string {
 // ── Preset component implementations ────────────────────────────────────────
 
 const customTheme = {
-  ...vscDarkPlus,
+  ...nightOwl,
   'pre[class*="language-"]': {
-    ...(vscDarkPlus as any)['pre[class*="language-"]'],
+    ...(nightOwl as any)['pre[class*="language-"]'],
     margin: 0,
     borderRadius: 0,
     fontSize: 13,
@@ -84,7 +84,7 @@ const PresetCodeBlock: React.FC<ComponentProps> = ({ children, lang, block }) =>
   return (
     <div style={{
       borderRadius: 6,
-      border: "1px solid #3c3c3c",
+      border: "1px solid #1d3b53",
       marginBottom: 12,
       overflow: "hidden",
       fontSize: 13,
@@ -94,11 +94,11 @@ const PresetCodeBlock: React.FC<ComponentProps> = ({ children, lang, block }) =>
         alignItems: "center",
         justifyContent: "space-between",
         padding: "4px 12px",
-        background: "#252526",
-        borderBottom: "1px solid #3c3c3c",
+        background: "#012840",
+        borderBottom: "1px solid #1d3b53",
         minHeight: 32,
       }}>
-        <span style={{ fontSize: 11, color: "#858585", fontFamily: "monospace" }}>
+        <span style={{ fontSize: 11, color: "#637777", fontFamily: "monospace" }}>
           {lang ?? ""}
         </span>
       </div>
@@ -113,8 +113,8 @@ const PresetCodeBlock: React.FC<ComponentProps> = ({ children, lang, block }) =>
           {code}
         </SyntaxHighlighter>
       ) : (
-        <pre style={{ margin: 0, padding: "12px 16px", background: "#1e1e1e", overflow: "auto", lineHeight: 1.6 }}>
-          <code style={{ color: "#858585" }}>{code}</code>
+        <pre style={{ margin: 0, padding: "12px 16px", background: "#011627", overflow: "auto", lineHeight: 1.6 }}>
+          <code style={{ color: "#637777" }}>{code}</code>
         </pre>
       )}
     </div>
