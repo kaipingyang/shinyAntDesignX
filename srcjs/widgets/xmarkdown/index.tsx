@@ -1,39 +1,40 @@
-import React, { useMemo, useEffect, useRef } from "react";
+import React, { useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { XMarkdown } from "@ant-design/x-markdown";
 import type { StreamingOption, ComponentProps } from "@ant-design/x-markdown";
 import "@ant-design/x-markdown/themes/light.css";
 import { ConfigProvider, theme as antdTheme, Typography } from "antd";
-import hljs from "highlight.js/lib/core";
-import r from "highlight.js/lib/languages/r";
-import python from "highlight.js/lib/languages/python";
-import javascript from "highlight.js/lib/languages/javascript";
-import typescript from "highlight.js/lib/languages/typescript";
-import bash from "highlight.js/lib/languages/bash";
-import sql from "highlight.js/lib/languages/sql";
-import json from "highlight.js/lib/languages/json";
-import xml from "highlight.js/lib/languages/xml";   // covers html
-import css from "highlight.js/lib/languages/css";
-import "highlight.js/styles/atom-one-dark.css";
+import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import rLang from "refractor/r";
+import pythonLang from "refractor/python";
+import javascriptLang from "refractor/javascript";
+import typescriptLang from "refractor/typescript";
+import bashLang from "refractor/bash";
+import sqlLang from "refractor/sql";
+import jsonLang from "refractor/json";
+import markupLang from "refractor/markup";
+import cssLang from "refractor/css";
 import type { CSSProperties } from "react";
 
-hljs.registerLanguage("r", r);
-hljs.registerLanguage("R", r);
-hljs.registerLanguage("python", python);
-hljs.registerLanguage("javascript", javascript);
-hljs.registerLanguage("typescript", typescript);
-hljs.registerLanguage("bash", bash);
-hljs.registerLanguage("shell", bash);
-hljs.registerLanguage("sql", sql);
-hljs.registerLanguage("json", json);
-hljs.registerLanguage("html", xml);
-hljs.registerLanguage("xml", xml);
-hljs.registerLanguage("css", css);
+// Register all languages into our own PrismLight instance
+SyntaxHighlighter.registerLanguage("r", rLang);
+SyntaxHighlighter.registerLanguage("R", rLang);
+SyntaxHighlighter.registerLanguage("python", pythonLang);
+SyntaxHighlighter.registerLanguage("javascript", javascriptLang);
+SyntaxHighlighter.registerLanguage("typescript", typescriptLang);
+SyntaxHighlighter.registerLanguage("bash", bashLang);
+SyntaxHighlighter.registerLanguage("shell", bashLang);
+SyntaxHighlighter.registerLanguage("sql", sqlLang);
+SyntaxHighlighter.registerLanguage("json", jsonLang);
+SyntaxHighlighter.registerLanguage("html", markupLang);
+SyntaxHighlighter.registerLanguage("xml", markupLang);
+SyntaxHighlighter.registerLanguage("css", cssLang);
 
 // @ts-ignore
 declare const HTMLWidgets: any;
 
-// Extract plain text from React children (hljs requires string)
+// Extract plain text from React children (SyntaxHighlighter requires string)
 function extractText(children: React.ReactNode): string {
   if (typeof children === "string") return children;
   if (typeof children === "number") return String(children);
@@ -46,26 +47,24 @@ function extractText(children: React.ReactNode): string {
 
 // ── Preset component implementations ────────────────────────────────────────
 
+const customOneDark = {
+  ...oneDark,
+  'pre[class*="language-"]': {
+    ...(oneDark as any)['pre[class*="language-"]'],
+    margin: 0,
+    borderRadius: 0,
+    fontSize: 13,
+    lineHeight: 1.6,
+  },
+};
+
 const PresetCodeBlock: React.FC<ComponentProps> = ({ children, lang, block }) => {
-  const codeRef = useRef<HTMLElement>(null);
-  const code = extractText(children);
-
-  useEffect(() => {
-    if (codeRef.current) {
-      // Reset to allow re-highlight on content change
-      codeRef.current.removeAttribute("data-highlighted");
-      if (lang && hljs.getLanguage(lang)) {
-        const result = hljs.highlight(code, { language: lang });
-        codeRef.current.innerHTML = result.value;
-      } else {
-        // Auto-detect or plain text
-        const result = hljs.highlightAuto(code);
-        codeRef.current.innerHTML = result.value;
-      }
-    }
-  }, [code, lang]);
-
   if (!block) return <code>{children}</code>;
+
+  const code = extractText(children).replace(/\n$/, "");
+  const normalizedLang = lang?.toLowerCase();
+  const supportedLangs = ["r", "python", "javascript", "typescript", "bash", "shell", "sql", "json", "html", "xml", "css"];
+  const useLang = normalizedLang && supportedLangs.includes(normalizedLang) ? normalizedLang : undefined;
 
   return (
     <div style={{
@@ -88,9 +87,21 @@ const PresetCodeBlock: React.FC<ComponentProps> = ({ children, lang, block }) =>
           {lang ?? ""}
         </span>
       </div>
-      <pre style={{ margin: 0, padding: "12px 16px", background: "#282c34", overflow: "auto", lineHeight: 1.6 }}>
-        <code ref={codeRef} className={lang ? `language-${lang}` : undefined} />
-      </pre>
+      {useLang ? (
+        <SyntaxHighlighter
+          language={useLang}
+          style={customOneDark}
+          wrapLines={true}
+          codeTagProps={{ style: { background: "transparent" } }}
+          PreTag="div"
+        >
+          {code}
+        </SyntaxHighlighter>
+      ) : (
+        <pre style={{ margin: 0, padding: "12px 16px", background: "#282c34", overflow: "auto", lineHeight: 1.6 }}>
+          <code style={{ color: "#abb2bf" }}>{code}</code>
+        </pre>
+      )}
     </div>
   );
 };
@@ -99,7 +110,6 @@ const PresetInlineCode: React.FC<ComponentProps> = ({ children }) => (
   <Typography.Text code style={{ fontSize: "0.9em" }}>{children}</Typography.Text>
 );
 
-// ExternalLink: use native <a> — Typography.Link swallows href in some antd versions
 const PresetExternalLink: React.FC<ComponentProps & { href?: string; target?: string }> = ({
   children, href, target, domNode: _domNode, streamStatus: _ss, lang: _lang, block: _block, ...rest
 }) => (
