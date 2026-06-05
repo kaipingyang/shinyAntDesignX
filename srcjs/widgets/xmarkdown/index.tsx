@@ -1,16 +1,39 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import { XMarkdown } from "@ant-design/x-markdown";
 import type { StreamingOption, ComponentProps } from "@ant-design/x-markdown";
 import "@ant-design/x-markdown/themes/light.css";
 import { ConfigProvider, theme as antdTheme, Typography } from "antd";
-import { CodeHighlighter } from "@ant-design/x";
+import hljs from "highlight.js/lib/core";
+import r from "highlight.js/lib/languages/r";
+import python from "highlight.js/lib/languages/python";
+import javascript from "highlight.js/lib/languages/javascript";
+import typescript from "highlight.js/lib/languages/typescript";
+import bash from "highlight.js/lib/languages/bash";
+import sql from "highlight.js/lib/languages/sql";
+import json from "highlight.js/lib/languages/json";
+import xml from "highlight.js/lib/languages/xml";   // covers html
+import css from "highlight.js/lib/languages/css";
+import "highlight.js/styles/github.css";
 import type { CSSProperties } from "react";
+
+hljs.registerLanguage("r", r);
+hljs.registerLanguage("R", r);
+hljs.registerLanguage("python", python);
+hljs.registerLanguage("javascript", javascript);
+hljs.registerLanguage("typescript", typescript);
+hljs.registerLanguage("bash", bash);
+hljs.registerLanguage("shell", bash);
+hljs.registerLanguage("sql", sql);
+hljs.registerLanguage("json", json);
+hljs.registerLanguage("html", xml);
+hljs.registerLanguage("xml", xml);
+hljs.registerLanguage("css", css);
 
 // @ts-ignore
 declare const HTMLWidgets: any;
 
-// Extract plain text from React children (CodeHighlighter requires string)
+// Extract plain text from React children (hljs requires string)
 function extractText(children: React.ReactNode): string {
   if (typeof children === "string") return children;
   if (typeof children === "number") return String(children);
@@ -24,15 +47,51 @@ function extractText(children: React.ReactNode): string {
 // ── Preset component implementations ────────────────────────────────────────
 
 const PresetCodeBlock: React.FC<ComponentProps> = ({ children, lang, block }) => {
-  // Only apply to block code; fall back to inline rendering for inline code
-  if (!block) {
-    return <code>{children}</code>;
-  }
+  const codeRef = useRef<HTMLElement>(null);
   const code = extractText(children);
+
+  useEffect(() => {
+    if (codeRef.current) {
+      // Reset to allow re-highlight on content change
+      codeRef.current.removeAttribute("data-highlighted");
+      if (lang && hljs.getLanguage(lang)) {
+        const result = hljs.highlight(code, { language: lang });
+        codeRef.current.innerHTML = result.value;
+      } else {
+        // Auto-detect or plain text
+        const result = hljs.highlightAuto(code);
+        codeRef.current.innerHTML = result.value;
+      }
+    }
+  }, [code, lang]);
+
+  if (!block) return <code>{children}</code>;
+
   return (
-    <CodeHighlighter lang={lang} style={{ marginBottom: 12 }}>
-      {code}
-    </CodeHighlighter>
+    <div style={{
+      borderRadius: 6,
+      border: "1px solid #e8eaed",
+      marginBottom: 12,
+      overflow: "hidden",
+      fontSize: 13,
+    }}>
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "4px 12px",
+        background: "#f6f8fa",
+        borderBottom: "1px solid #e8eaed",
+        minHeight: 32,
+      }}>
+        <span style={{ fontSize: 11, color: "#6b7280", fontFamily: "monospace" }}>
+          {lang ?? ""}
+        </span>
+      </div>
+      <pre style={{ margin: 0, padding: "12px 16px", background: "#fff", overflow: "auto", lineHeight: 1.6 }}>
+        <code ref={codeRef} className={lang ? `language-${lang}` : undefined} />
+      </pre>
+    </div>
   );
 };
 
@@ -40,27 +99,29 @@ const PresetInlineCode: React.FC<ComponentProps> = ({ children }) => (
   <Typography.Text code style={{ fontSize: "0.9em" }}>{children}</Typography.Text>
 );
 
+// ExternalLink: use native <a> — Typography.Link swallows href in some antd versions
 const PresetExternalLink: React.FC<ComponentProps & { href?: string; target?: string }> = ({
-  children, href, target, ...rest
+  children, href, target, domNode: _domNode, streamStatus: _ss, lang: _lang, block: _block, ...rest
 }) => (
-  <Typography.Link
+  <a
     href={href}
     target={target ?? "_blank"}
     rel="noopener noreferrer"
-    {...(rest as any)}
+    style={{ color: "#1677ff", textDecoration: "underline" }}
+    {...rest}
   >
     {children}
     {(!target || target === "_blank") && (
       <span style={{ fontSize: "0.75em", marginLeft: 2, opacity: 0.6 }}>↗</span>
     )}
-  </Typography.Link>
+  </a>
 );
 
-// Registry: preset name → { tag, component }
-const PRESET_REGISTRY: Record<string, { tag: string; component: React.ComponentType<any> }> = {
-  CodeBlock:    { tag: "code",  component: PresetCodeBlock },
-  InlineCode:   { tag: "code",  component: PresetInlineCode },
-  ExternalLink: { tag: "a",     component: PresetExternalLink },
+// Registry: preset name → component
+const PRESET_REGISTRY: Record<string, React.ComponentType<any>> = {
+  CodeBlock:    PresetCodeBlock,
+  InlineCode:   PresetInlineCode,
+  ExternalLink: PresetExternalLink,
 };
 
 /**
@@ -98,10 +159,8 @@ function resolveComponents(
   if (!components || Object.keys(components).length === 0) return undefined;
   const resolved: Record<string, React.ComponentType<any>> = {};
   for (const [tag, presetName] of Object.entries(components)) {
-    const entry = PRESET_REGISTRY[presetName];
-    if (entry) {
-      resolved[tag] = entry.component;
-    }
+    const comp = PRESET_REGISTRY[presetName];
+    if (comp) resolved[tag] = comp;
   }
   return Object.keys(resolved).length > 0 ? resolved : undefined;
 }
@@ -140,7 +199,6 @@ function XMarkdownWidget({
     </ConfigProvider>
   );
 }
-
 
 HTMLWidgets.widget({
   name: "xmarkdown",
