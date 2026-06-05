@@ -1,63 +1,38 @@
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { XMarkdown } from "@ant-design/x-markdown";
 import type { StreamingOption, ComponentProps } from "@ant-design/x-markdown";
 import "@ant-design/x-markdown/themes/light.css";
-import { ConfigProvider, theme as antdTheme, Typography, Button, Space, message } from "antd";
+import { ConfigProvider, theme as antdTheme, Typography } from "antd";
+import { CodeHighlighter } from "@ant-design/x";
 import type { CSSProperties } from "react";
 
 // @ts-ignore
 declare const HTMLWidgets: any;
 
+// Extract plain text from React children (CodeHighlighter requires string)
+function extractText(children: React.ReactNode): string {
+  if (typeof children === "string") return children;
+  if (typeof children === "number") return String(children);
+  if (Array.isArray(children)) return children.map(extractText).join("");
+  if (React.isValidElement(children)) {
+    return extractText((children.props as any).children);
+  }
+  return "";
+}
+
 // ── Preset component implementations ────────────────────────────────────────
 
-const PresetCodeBlock: React.FC<ComponentProps> = ({ children, lang }) => {
-  const [copied, setCopied] = React.useState(false);
-  const code = typeof children === "string" ? children : "";
-
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(code).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    }).catch(() => {
-      message.error("复制失败");
-    });
-  }, [code]);
-
+const PresetCodeBlock: React.FC<ComponentProps> = ({ children, lang, block }) => {
+  // Only apply to block code; fall back to inline rendering for inline code
+  if (!block) {
+    return <code>{children}</code>;
+  }
+  const code = extractText(children);
   return (
-    <div style={{
-      position: "relative",
-      background: "#f6f8fa",
-      borderRadius: 6,
-      border: "1px solid #e8eaed",
-      marginBottom: 12,
-      overflow: "hidden",
-    }}>
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "4px 12px",
-        background: "#eef0f3",
-        borderBottom: "1px solid #e8eaed",
-        minHeight: 32,
-      }}>
-        <span style={{ fontSize: 11, color: "#6b7280", fontFamily: "monospace" }}>
-          {lang || ""}
-        </span>
-        <Button
-          size="small"
-          type="text"
-          onClick={handleCopy}
-          style={{ fontSize: 11, color: "#6b7280", height: 22, padding: "0 6px" }}
-        >
-          {copied ? "✓ 已复制" : "复制"}
-        </Button>
-      </div>
-      <pre style={{ margin: 0, padding: "12px 16px", overflow: "auto", fontSize: 13, lineHeight: 1.6 }}>
-        <code>{children}</code>
-      </pre>
-    </div>
+    <CodeHighlighter lang={lang} style={{ marginBottom: 12 }}>
+      {code}
+    </CodeHighlighter>
   );
 };
 
