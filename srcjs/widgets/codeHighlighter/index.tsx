@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { ConfigProvider, theme as antdTheme } from "antd";
 import rLang from "refractor/r";
 import pythonLang from "refractor/python";
@@ -46,10 +46,10 @@ const SUPPORTED_LANGS = new Set([
   "jsx", "tsx", "yaml", "yml",
 ]);
 
-const customOneDark = {
-  ...oneDark,
+const customTheme = {
+  ...vscDarkPlus,
   'pre[class*="language-"]': {
-    ...(oneDark as any)['pre[class*="language-"]'],
+    ...(vscDarkPlus as any)['pre[class*="language-"]'],
     margin: 0,
     borderRadius: 0,
     fontSize: 13,
@@ -70,18 +70,18 @@ function CodeHighlighterWidget({ code, lang, showHeader = true }: CodeHighlighte
 
   return (
     <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm }}>
-      <div style={{ borderRadius: 6, border: "1px solid #373b41", overflow: "hidden", fontSize: 13 }}>
+      <div style={{ borderRadius: 6, border: "1px solid #3c3c3c", overflow: "hidden", fontSize: 13 }}>
         {showHeader && (
           <div style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             padding: "4px 12px",
-            background: "#21252b",
-            borderBottom: "1px solid #373b41",
+            background: "#252526",
+            borderBottom: "1px solid #3c3c3c",
             minHeight: 32,
           }}>
-            <span style={{ fontSize: 11, color: "#abb2bf", fontFamily: "monospace" }}>
+            <span style={{ fontSize: 11, color: "#858585", fontFamily: "monospace" }}>
               {displayLang}
             </span>
           </div>
@@ -89,7 +89,7 @@ function CodeHighlighterWidget({ code, lang, showHeader = true }: CodeHighlighte
         {useLang ? (
           <SyntaxHighlighter
             language={useLang}
-            style={customOneDark}
+            style={customTheme}
             wrapLines={true}
             codeTagProps={{ style: { background: "transparent" } }}
             PreTag="div"
@@ -97,8 +97,8 @@ function CodeHighlighterWidget({ code, lang, showHeader = true }: CodeHighlighte
             {code.replace(/\n$/, "")}
           </SyntaxHighlighter>
         ) : (
-          <pre style={{ margin: 0, padding: "12px 16px", background: "#282c34", overflow: "auto", lineHeight: 1.6 }}>
-            <code style={{ color: "#abb2bf" }}>{code}</code>
+          <pre style={{ margin: 0, padding: "12px 16px", background: "#1e1e1e", overflow: "auto", lineHeight: 1.6 }}>
+            <code style={{ color: "#858585" }}>{code}</code>
           </pre>
         )}
       </div>
