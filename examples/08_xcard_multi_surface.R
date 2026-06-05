@@ -182,6 +182,11 @@ server <- function(input, output, session) {
       region <- act$context$region$value %||% "全国"
       period <- act$context$period$value %||% "本月"
 
+      # Re-send createSurface in case result-card was previously deleted.
+      # XCard.Card uses createSurface to reset its internal state before
+      # processing updateComponents. Without this, a deleted surface stays
+      # absent from the message DOM and receives no rendering.
+      ctrl$send_card_command(xcard_create_surface("result-card"), thread_id = "default")
       ctrl$send_card_command(
         xcard_update_components("result-card",
           make_result_card_data(region, period)),

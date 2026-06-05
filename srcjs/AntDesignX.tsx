@@ -131,7 +131,7 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
         }
       )
     );
-  }, [messages]);
+  }, [messages, cardCommandVersion]);
 
   // ── xCard config ──────────────────────────────────────────────────────────
   const xcardMode = config.xcard_mode ?? "inline";
@@ -274,6 +274,8 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
         const sid = (command as any).deleteSurface?.surfaceId;
         if (sid) {
           activeSurfaceIdsRef.current.delete(sid);
+          // Also clear from pending so a subsequent createSurface can re-add it
+          pendingSurfaceIdsRef.current = pendingSurfaceIdsRef.current.filter((s) => s !== sid);
           setMessagesRef.current((all) =>
             all.map((mi) => {
               if (!mi.message.cardSurfaceIds?.includes(sid)) return mi;
