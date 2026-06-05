@@ -77,7 +77,10 @@ lazy-loading historical session messages.}
 }
 \value{
 A list with `clear()`, `send_tool_call()`, `send_tool_result()`,
-  and `send_sessions()` functions.
+  `send_sessions()`, `send_card_command(command, thread_id)`, and
+  `trigger_message(text, thread_id)` functions.
+  `trigger_message()` programmatically injects a user message into the chat,
+  triggering the handler as if the user had typed and submitted it.
 }
 \description{
 Handles the server-side logic for an [antDesignXOutput()] widget: receives

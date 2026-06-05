@@ -4,14 +4,14 @@
 \alias{xcard_update_data}
 \title{Build A2UI updateDataModel command}
 \usage{
-xcard_update_data(surface_id, path, value)
+xcard_update_data(surface_id, path = "/", value = NULL)
 }
 \arguments{
 \item{surface_id}{Surface ID.}
 
-\item{path}{JSON Pointer path (e.g. `"/form/name"`).}
+\item{path}{JSON Pointer path (e.g. `"/form/name"`). Defaults to `"/"` (full replace).}
 
-\item{value}{Value to set.}
+\item{value}{Value to set. Omit (or pass `NULL`) to **delete** the key at `path`.}
 }
 \description{
 Build A2UI updateDataModel command

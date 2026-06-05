@@ -4,12 +4,23 @@
 \alias{xcard_create_surface}
 \title{Build A2UI createSurface command}
 \usage{
-xcard_create_surface(surface_id, catalog_id = "shiny-default")
+xcard_create_surface(
+  surface_id,
+  catalog_id = "shiny-default",
+  theme = NULL,
+  send_data_model = FALSE
+)
 }
 \arguments{
 \item{surface_id}{Surface ID string.}
 
 \item{catalog_id}{Catalog ID (default `"shiny-default"`).}
+
+\item{theme}{Optional named list with fields: `primaryColor` (hex), `iconUrl` (string),
+`agentDisplayName` (string). Used to visually distinguish multiple agents.}
+
+\item{send_data_model}{If `TRUE`, the full data model is included in every action
+payload. Default `FALSE`. Useful when the agent needs current form state.}
 }
 \description{
 Build A2UI createSurface command

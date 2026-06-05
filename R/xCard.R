@@ -34,11 +34,20 @@ renderAntDesignXCard <- function(expr, env = parent.frame(), quoted = FALSE) {
 }
 
 #' Build A2UI createSurface command
+#'
 #' @param surface_id Surface ID string.
 #' @param catalog_id Catalog ID (default `"shiny-default"`).
+#' @param theme Optional named list with fields: `primaryColor` (hex), `iconUrl` (string),
+#'   `agentDisplayName` (string). Used to visually distinguish multiple agents.
+#' @param send_data_model If `TRUE`, the full data model is included in every action
+#'   payload. Default `FALSE`. Useful when the agent needs current form state.
 #' @export
-xcard_create_surface <- function(surface_id, catalog_id = "shiny-default") {
-  list(version = "v0.9", createSurface = list(surfaceId = surface_id, catalogId = catalog_id))
+xcard_create_surface <- function(surface_id, catalog_id = "shiny-default",
+                                 theme = NULL, send_data_model = FALSE) {
+  payload <- list(surfaceId = surface_id, catalogId = catalog_id)
+  if (!is.null(theme)) payload$theme <- theme
+  if (isTRUE(send_data_model)) payload$sendDataModel <- TRUE
+  list(version = "v0.9", createSurface = payload)
 }
 
 #' Build A2UI updateComponents command
@@ -51,12 +60,15 @@ xcard_update_components <- function(surface_id, components) {
 }
 
 #' Build A2UI updateDataModel command
+#'
 #' @param surface_id Surface ID.
-#' @param path JSON Pointer path (e.g. `"/form/name"`).
-#' @param value Value to set.
+#' @param path JSON Pointer path (e.g. `"/form/name"`). Defaults to `"/"` (full replace).
+#' @param value Value to set. Omit (or pass `NULL`) to **delete** the key at `path`.
 #' @export
-xcard_update_data <- function(surface_id, path, value) {
-  list(version = "v0.9", updateDataModel = list(surfaceId = surface_id, path = path, value = value))
+xcard_update_data <- function(surface_id, path = "/", value = NULL) {
+  payload <- list(surfaceId = surface_id, path = path)
+  if (!is.null(value)) payload$value <- value
+  list(version = "v0.9", updateDataModel = payload)
 }
 
 #' Build A2UI deleteSurface command

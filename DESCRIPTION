@@ -12,7 +12,7 @@ Description: A collection of Shiny htmlwidgets wrapping Ant Design X React compo
     tool calls, slash commands, and conversation history.
 License: MIT
 Encoding: UTF-8
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Imports:
     htmlwidgets,
     jsonlite,

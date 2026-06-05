@@ -22,3 +22,10 @@ Wraps `ClaudeAgentSDK` into an `antDesignXServer`-compatible handler.
 Supports streaming, tool approval UI, thinking output, attachments,
 and session persistence across R restarts.
 }
+\section{Multi-user warning}{
+
+Call this function **inside `server()`**, not in `global.R` or at app level.
+The returned handler closes over per-session state (`clients` list). Sharing a
+single handler across Shiny sessions causes users to share Claude agent state.
+}
+

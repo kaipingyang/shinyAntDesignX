@@ -30,3 +30,11 @@ Supports per-thread conversation history, tool calling with optional
 human-in-the-loop approval, attachments, and optional SQLite session
 persistence.
 }
+\section{Multi-user warning}{
+
+Call this function **inside `server()`**, not in `global.R` or at app level.
+The returned handler closes over per-session state (`chats` list). Sharing a
+single handler across Shiny sessions causes users to see each other's
+conversation history.
+}
+

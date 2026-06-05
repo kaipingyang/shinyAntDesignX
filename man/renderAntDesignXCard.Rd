@@ -8,13 +8,12 @@ renderAntDesignXCard(expr, env = parent.frame(), quoted = FALSE)
 }
 \arguments{
 \item{expr}{A list with:
-  * `inputId` — Shiny input ID for action events. Emits `list(name, surfaceId, context)`.
-  * `surfaceId` — the surface/card ID string.
-  * `commands` — list of A2UI v0.9 command objects. Each command is a named list.
-    Build with [xcard_create_surface()], [xcard_update_components()], [xcard_update_data()].
-  * `catalog` — optional named list defining custom component schemas.
-
-Built-in components: `Text`, `Button`, `Input`, `Select`, `Tag`.}
+* `inputId` — Shiny input ID for action events. Emits `list(name, surfaceId, context)`.
+* `surfaceId` — surface ID string, or character vector for multiple surfaces.
+* `commands` — list of A2UI v0.9 command objects. Each command is a named list.
+  Build with [xcard_create_surface()], [xcard_update_components()],
+  [xcard_update_data()], [xcard_delete_surface()].
+* `catalog` — optional named list defining custom component schemas.}
 
 \item{env, quoted}{Passed to [shiny::exprToFunction()].}
 }

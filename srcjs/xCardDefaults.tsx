@@ -7,10 +7,12 @@ import {
   Button,
   Checkbox,
   Collapse,
+  DatePicker,
   Descriptions,
   Divider,
   Input,
   InputNumber,
+  Modal,
   Progress,
   Radio,
   Rate,
@@ -239,6 +241,77 @@ export const SHINY_DEFAULT_CATALOG: Catalog = {
         value:    { type: "string" },
         dataPath: { type: "string" },
         block:    { type: "boolean" },
+      },
+    },
+
+    // ── 媒体 ─────────────────────────────────────────────────────────────────
+    Image: {
+      props: {
+        src:        { type: "string" },
+        alt:        { type: "string" },
+        width:      { type: "string" },
+        height:     { type: "string" },
+        objectFit:  { type: "string", enum: ["contain", "cover", "fill", "none", "scale-down"] },
+        preview:    { type: "boolean" },
+      },
+    },
+
+    // ── 布局补充 ──────────────────────────────────────────────────────────────
+    Row: {
+      props: {
+        gap:     { type: "number" },
+        padding: { type: "string" },
+        wrap:    { type: "boolean" },
+        align:   { type: "string", enum: ["flex-start", "center", "flex-end", "stretch"] },
+        justify: { type: "string", enum: ["flex-start", "center", "flex-end", "space-between", "space-around"] },
+      },
+    },
+    List: {
+      props: {
+        items:     { type: "array" },
+        size:      { type: "string", enum: ["small", "default", "large"] },
+        bordered:  { type: "boolean" },
+        renderKey: { type: "string" },
+      },
+    },
+
+    // ── 表单补充 ──────────────────────────────────────────────────────────────
+    DateTimeInput: {
+      props: {
+        label:    { type: "string" },
+        value:    { type: "string" },
+        dataPath: { type: "string" },
+        format:   { type: "string" },
+        showTime: { type: "boolean" },
+        placeholder: { type: "string" },
+      },
+    },
+    ChoicePicker: {
+      props: {
+        label:    { type: "string" },
+        options:  { type: "array" },
+        value:    {},
+        dataPath: { type: "string" },
+        variant:  { type: "string", enum: ["single", "multiple"] },
+      },
+    },
+    CheckBox: {
+      props: {
+        label:    { type: "string" },
+        checked:  { type: "boolean" },
+        dataPath: { type: "string" },
+      },
+    },
+
+    // ── 弹窗 ─────────────────────────────────────────────────────────────────
+    ModalButton: {
+      props: {
+        label:       { type: "string" },
+        title:       { type: "string" },
+        content:     { type: "string" },
+        okText:      { type: "string" },
+        cancelText:  { type: "string" },
+        variant:     { type: "string", enum: ["primary", "default", "dashed", "text", "link"] },
       },
     },
   },
@@ -589,6 +662,121 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
           if (dataPath && onDataChange) onDataChange(dataPath, String(v));
         }}
       />
+    );
+  },
+
+  // ── 媒体 ───────────────────────────────────────────────────────────────────
+  Image: ({ src, alt = "", width = "100%", height = "auto", objectFit = "contain", preview = true }: any) => (
+    <div style={{ marginBottom: 8, width }}>
+      <img
+        src={src}
+        alt={alt}
+        style={{ width: "100%", height, objectFit, display: "block", borderRadius: 4 }}
+        {...(preview ? { onClick: () => window.open(src, "_blank") } : {})}
+      />
+    </div>
+  ),
+
+  // ── 布局补充 ────────────────────────────────────────────────────────────────
+  Row: ({ children, gap = 8, padding = "0", wrap = true, align = "flex-start", justify = "flex-start" }: any) => (
+    <div style={{ display: "flex", flexDirection: "row", gap, padding, flexWrap: wrap ? "wrap" : "nowrap", alignItems: align, justifyContent: justify }}>
+      {children}
+    </div>
+  ),
+
+  List: ({ items = [], size = "default", bordered = false, renderKey = "label" }: any) => {
+    const padding = size === "small" ? "4px 0" : size === "large" ? "12px 0" : "8px 0";
+    return (
+      <div style={{ border: bordered ? "1px solid #d9d9d9" : "none", borderRadius: bordered ? 6 : 0, marginBottom: 8 }}>
+        {(items as any[]).map((item: any, idx: number) => (
+          <div key={idx} style={{ padding, borderBottom: idx < items.length - 1 ? "1px solid #f0f0f0" : "none" }}>
+            {typeof item === "string" ? item : (item[renderKey] ?? item.content ?? item.label ?? JSON.stringify(item))}
+          </div>
+        ))}
+      </div>
+    );
+  },
+
+  // ── 表单补充 ────────────────────────────────────────────────────────────────
+  DateTimeInput: ({ label, value, dataPath, format = "YYYY-MM-DD", showTime = false, placeholder, onDataChange }: any) => {
+    return (
+      <div style={{ marginBottom: 8 }}>
+        {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
+        <DatePicker
+          format={format}
+          showTime={showTime}
+          placeholder={placeholder}
+          style={{ width: "100%" }}
+          onChange={(_date: any, dateStr: string | string[]) => {
+            const str = Array.isArray(dateStr) ? dateStr[0] : dateStr;
+            if (dataPath && onDataChange) onDataChange(dataPath, str);
+          }}
+        />
+      </div>
+    );
+  },
+
+  ChoicePicker: ({ label, options = [], value, dataPath, variant = "single", onDataChange }: any) => {
+    if (variant === "multiple") {
+      return (
+        <div style={{ marginBottom: 8 }}>
+          {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
+          <Checkbox.Group
+            options={(options as string[]).map((o) => ({ label: o, value: o }))}
+            value={Array.isArray(value) ? value : value ? [value] : []}
+            onChange={(vals) => { if (dataPath && onDataChange) onDataChange(dataPath, vals); }}
+          />
+        </div>
+      );
+    }
+    // single — use Radio.Group
+    return (
+      <div style={{ marginBottom: 8 }}>
+        {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
+        <Radio.Group
+          value={value}
+          onChange={(e) => { if (dataPath && onDataChange) onDataChange(dataPath, e.target.value); }}
+        >
+          {(options as string[]).map((o) => <Radio key={o} value={o}>{o}</Radio>)}
+        </Radio.Group>
+      </div>
+    );
+  },
+
+  CheckBox: ({ label, checked, dataPath, onDataChange }: any) => (
+    <div style={{ marginBottom: 8 }}>
+      <Checkbox
+        checked={!!checked}
+        onChange={(e) => { if (dataPath && onDataChange) onDataChange(dataPath, e.target.checked); }}
+      >
+        {label}
+      </Checkbox>
+    </div>
+  ),
+
+  // ── 弹窗 ──────────────────────────────────────────────────────────────────
+  ModalButton: ({ label, title, content, okText = "确定", cancelText = "取消", variant = "default" }: any) => {
+    const [open, setOpen] = React.useState(false);
+    return (
+      <>
+        <Button
+          type={variant === "primary" ? "primary" : variant as any}
+          onClick={() => setOpen(true)}
+          style={{ margin: "4px 2px" }}
+        >
+          {label}
+        </Button>
+        <Modal
+          open={open}
+          title={title}
+          okText={okText}
+          cancelText={cancelText}
+          onOk={() => setOpen(false)}
+          onCancel={() => setOpen(false)}
+        >
+          <p>{content}</p>
+        </Modal>
+      </>
     );
   },
 };
