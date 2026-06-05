@@ -106,31 +106,30 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   // (R sends them before on_chunk). Buffer them and flush when assistant appears.
   useEffect(() => {
     if (pendingSurfaceIdsRef.current.length === 0) return;
-    // Find last assistant message
-    let lastAssistantIdx = -1;
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].message.role === "assistant") { lastAssistantIdx = i; break; }
-    }
-    if (lastAssistantIdx < 0) return;
-
-    const toAttach = pendingSurfaceIdsRef.current.filter(
-      (sid) => !messages[lastAssistantIdx].message.cardSurfaceIds?.includes(sid)
-    );
-    if (toAttach.length === 0) { pendingSurfaceIdsRef.current = []; return; }
-
+    const toFlush = [...pendingSurfaceIdsRef.current];
     pendingSurfaceIdsRef.current = [];
-    const targetId = messages[lastAssistantIdx].id;
-    setMessagesRef.current((all) =>
-      all.map((m) =>
-        m.id !== targetId ? m : {
-          ...m,
-          message: {
-            ...m.message,
-            cardSurfaceIds: [...new Set([...(m.message.cardSurfaceIds ?? []), ...toAttach])],
-          },
-        }
-      )
-    );
+    setMessagesRef.current((all) => {
+      let lastAssistantIdx = -1;
+      for (let i = all.length - 1; i >= 0; i--) {
+        if (all[i].message.role === "assistant") { lastAssistantIdx = i; break; }
+      }
+      if (lastAssistantIdx < 0) {
+        pendingSurfaceIdsRef.current = toFlush; // restore for next trigger
+        return all;
+      }
+      const target = all[lastAssistantIdx];
+      const toAttach = toFlush.filter(
+        (sid) => !target.message.cardSurfaceIds?.includes(sid)
+      );
+      if (toAttach.length === 0) return all;
+      return all.map((m, i) => i !== lastAssistantIdx ? m : {
+        ...m,
+        message: {
+          ...m.message,
+          cardSurfaceIds: [...new Set([...(m.message.cardSurfaceIds ?? []), ...toAttach])],
+        },
+      });
+    });
   }, [messages]);
 
   // ── xCard config ──────────────────────────────────────────────────────────
@@ -154,30 +153,35 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   // Flush pending surfaceIds when a new createSurface arrives without a new message
   // (e.g. R sends createSurface from observeEvent — no on_chunk, so [messages] alone
   // wouldn't re-trigger the flush above).
+  // Uses setMessages functional update to read fresh state — avoids stale closure on messages.
   useEffect(() => {
     if (pendingSurfaceIdsRef.current.length === 0) return;
-    let lastAssistantIdx = -1;
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].message.role === "assistant") { lastAssistantIdx = i; break; }
-    }
-    if (lastAssistantIdx < 0) return;
-    const toAttach = pendingSurfaceIdsRef.current.filter(
-      (sid) => !messages[lastAssistantIdx].message.cardSurfaceIds?.includes(sid)
-    );
-    if (toAttach.length === 0) { pendingSurfaceIdsRef.current = []; return; }
+    const toFlush = [...pendingSurfaceIdsRef.current];
     pendingSurfaceIdsRef.current = [];
-    const targetId = messages[lastAssistantIdx].id;
-    setMessagesRef.current((all) =>
-      all.map((m) =>
-        m.id !== targetId ? m : {
-          ...m,
-          message: {
-            ...m.message,
-            cardSurfaceIds: [...new Set([...(m.message.cardSurfaceIds ?? []), ...toAttach])],
-          },
-        }
-      )
-    );
+    setMessagesRef.current((all) => {
+      // Find last assistant message in fresh state
+      let lastAssistantIdx = -1;
+      for (let i = all.length - 1; i >= 0; i--) {
+        if (all[i].message.role === "assistant") { lastAssistantIdx = i; break; }
+      }
+      if (lastAssistantIdx < 0) {
+        // No assistant message yet — restore pending for [messages] effect to pick up
+        pendingSurfaceIdsRef.current = toFlush;
+        return all;
+      }
+      const target = all[lastAssistantIdx];
+      const toAttach = toFlush.filter(
+        (sid) => !target.message.cardSurfaceIds?.includes(sid)
+      );
+      if (toAttach.length === 0) return all;
+      return all.map((m, i) => i !== lastAssistantIdx ? m : {
+        ...m,
+        message: {
+          ...m.message,
+          cardSurfaceIds: [...new Set([...(m.message.cardSurfaceIds ?? []), ...toAttach])],
+        },
+      });
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardCommandVersion]);
 
