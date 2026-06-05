@@ -27,7 +27,7 @@ dependencies:
     version: 0.2.0
     src: www
     script: vendor.js
-  - name: mermaid
+  - name: mermaid-lib
     version: 11.0.0
     src: www/lib/mermaid
     script: mermaid.min.js
