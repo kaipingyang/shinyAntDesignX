@@ -717,14 +717,36 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
   },
 
   ChoicePicker: ({ label, options = [], value, dataPath, variant = "single", onDataChange }: any) => {
+    const selectedRef = React.useRef<string | string[] | undefined>(undefined);
+    const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
+
+    // Init from props only once
+    if (selectedRef.current === undefined && value !== undefined) {
+      selectedRef.current = value;
+    }
+    if (selectedRef.current === undefined) {
+      selectedRef.current = variant === "multiple" ? [] : undefined;
+    }
+
+    React.useEffect(() => {
+      if (dataPath && onDataChange && selectedRef.current !== undefined) {
+        onDataChange(dataPath, selectedRef.current);
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     if (variant === "multiple") {
       return (
         <div style={{ marginBottom: 8 }}>
           {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
           <Checkbox.Group
             options={(options as string[]).map((o) => ({ label: o, value: o }))}
-            value={Array.isArray(value) ? value : value ? [value] : []}
-            onChange={(vals) => { if (dataPath && onDataChange) onDataChange(dataPath, vals); }}
+            value={Array.isArray(selectedRef.current) ? selectedRef.current : []}
+            onChange={(vals) => {
+              selectedRef.current = vals as string[];
+              forceUpdate();
+              if (dataPath && onDataChange) onDataChange(dataPath, vals);
+            }}
           />
         </div>
       );
@@ -734,8 +756,12 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
       <div style={{ marginBottom: 8 }}>
         {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
         <Radio.Group
-          value={value}
-          onChange={(e) => { if (dataPath && onDataChange) onDataChange(dataPath, e.target.value); }}
+          value={selectedRef.current}
+          onChange={(e) => {
+            selectedRef.current = e.target.value;
+            forceUpdate();
+            if (dataPath && onDataChange) onDataChange(dataPath, e.target.value);
+          }}
         >
           {(options as string[]).map((o) => <Radio key={o} value={o}>{o}</Radio>)}
         </Radio.Group>
@@ -743,16 +769,36 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     );
   },
 
-  CheckBox: ({ label, checked, dataPath, onDataChange }: any) => (
-    <div style={{ marginBottom: 8 }}>
-      <Checkbox
-        checked={!!checked}
-        onChange={(e) => { if (dataPath && onDataChange) onDataChange(dataPath, e.target.checked); }}
-      >
-        {label}
-      </Checkbox>
-    </div>
-  ),
+  CheckBox: ({ label, checked, dataPath, onDataChange }: any) => {
+    const checkedRef = React.useRef<boolean | undefined>(undefined);
+    const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
+
+    if (checkedRef.current === undefined) {
+      checkedRef.current = !!checked;
+    }
+
+    React.useEffect(() => {
+      if (dataPath && onDataChange) {
+        onDataChange(dataPath, checkedRef.current);
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    return (
+      <div style={{ marginBottom: 8 }}>
+        <Checkbox
+          checked={checkedRef.current}
+          onChange={(e) => {
+            checkedRef.current = e.target.checked;
+            forceUpdate();
+            if (dataPath && onDataChange) onDataChange(dataPath, e.target.checked);
+          }}
+        >
+          {label}
+        </Checkbox>
+      </div>
+    );
+  },
 
   // ── 弹窗 ──────────────────────────────────────────────────────────────────
   ModalButton: ({ label, title, content, okText = "确定", cancelText = "取消", variant = "default" }: any) => {
