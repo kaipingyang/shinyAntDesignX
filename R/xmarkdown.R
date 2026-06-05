@@ -41,6 +41,17 @@ antDesignXMarkdownOutput <- function(outputId, width = "100%", height = "auto", 
 #'   * `style` — Named list of inline CSS styles, e.g. `list(fontSize = "14px")`.
 #'   * `paragraphTag` — HTML tag for `<p>` elements, e.g. `"div"`. Useful when custom
 #'     components contain block-level elements and trigger HTML validation errors.
+#'   * `components` — Named list mapping HTML tag names to preset component names.
+#'     Replaces the default rendering of that HTML element with a built-in styled component.
+#'     Available presets:
+#'     - `"CodeBlock"` — Block code (`code` with `block=TRUE`): adds a language label and
+#'       a copy button above the code block. Map to tag `"code"`.
+#'     - `"InlineCode"` — Inline `code`: renders with antd `Typography.Text code` styling.
+#'       Map to tag `"code"` (XMarkdown passes `block=FALSE` for inline code).
+#'     - `"ExternalLink"` — Anchor `a`: renders with antd `Typography.Link` + `↗` icon;
+#'       opens in new tab by default. Map to tag `"a"`.
+#'     Example: `list(code = "CodeBlock", a = "ExternalLink")`
+#'     Note: `"CodeBlock"` and `"InlineCode"` both map to `"code"` — choose one per render.
 #'   * `dompurifyConfig` — Named list of DOMPurify options for HTML sanitisation /
 #'     XSS protection, e.g. `list(ALLOWED_TAGS = list("b", "i", "em", "strong"))`.
 #'   * `protectCustomTagNewlines` — logical (default `FALSE`). Preserve newlines inside
