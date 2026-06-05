@@ -19,5 +19,7 @@ antDesignXCodeHighlighterOutput(
 \item{...}{Additional arguments passed to [htmlwidgets::shinyWidgetOutput()].}
 }
 \description{
-Renders syntax-highlighted code using Ant Design X's CodeHighlighter component.
+Renders syntax-highlighted code using PrismLight (react-syntax-highlighter)
+with Night Owl theme. Supported languages: r/R, python/py, javascript/js,
+typescript/ts, bash/shell/sh, sql, json, html/xml, css, jsx, tsx, yaml/yml.
 }
