@@ -66,6 +66,17 @@ function XCardWidget({ inputId, surfaceId, commands, catalog }: XCardWidgetProps
 
   const surfaceIds = Array.isArray(surfaceId) ? surfaceId : [surfaceId];
 
+  // Extract primaryColor from the last createSurface command that has a theme
+  const primaryColor = useMemo(() => {
+    for (let i = commands.length - 1; i >= 0; i--) {
+      const cmd = commands[i] as any;
+      if (cmd?.createSurface?.theme?.primaryColor) {
+        return cmd.createSurface.theme.primaryColor as string;
+      }
+    }
+    return undefined;
+  }, [commands]);
+
   const handleAction = useCallback((payload: ActionPayload) => {
     if (inputId) {
       Shiny.setInputValue(inputId, {
@@ -77,9 +88,13 @@ function XCardWidget({ inputId, surfaceId, commands, catalog }: XCardWidgetProps
     }
   }, [inputId]);
 
+  const themeConfig = primaryColor
+    ? { algorithm: antdTheme.defaultAlgorithm, token: { colorPrimary: primaryColor } }
+    : { algorithm: antdTheme.defaultAlgorithm };
+
   return (
     <ErrorBoundary>
-      <ConfigProvider theme={{ algorithm: antdTheme.defaultAlgorithm }}>
+      <ConfigProvider theme={themeConfig}>
         <XCard.Box
           commands={commands}
           onAction={handleAction}
