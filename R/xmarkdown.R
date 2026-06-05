@@ -52,8 +52,9 @@ antDesignXMarkdownOutput <- function(outputId, width = "100%", height = "auto", 
 #'       Map to tag `"code"`. Note: does **not** use `@ant-design/x` `CodeHighlighter`.
 #'     - `"InlineCode"` — Inline `code`: renders with antd `Typography.Text code` styling.
 #'       Map to tag `"code"` (XMarkdown passes `block=FALSE` for inline code).
-#'     - `"ExternalLink"` — Anchor `a`: renders with antd `Typography.Link` + `↗` icon;
-#'       opens in new tab by default. Map to tag `"a"`.
+#'     - `"ExternalLink"` — Anchor `a`: renders with styled `<a>` + `↗` icon when
+#'       `target="_blank"` (set automatically when `openLinksInNewTab = TRUE`).
+#'       Map to tag `"a"`.
 #'     Example: `list(code = "CodeBlock", a = "ExternalLink")`
 #'     Note: `"CodeBlock"` and `"InlineCode"` both map to `"code"` — choose one per render.
 #'   * `dompurifyConfig` — Named list of DOMPurify options for HTML sanitisation /
