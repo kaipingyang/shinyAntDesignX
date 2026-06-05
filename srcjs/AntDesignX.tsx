@@ -5,7 +5,7 @@ import type { BubbleProps, ConversationsProps } from "@ant-design/x";
 import "@ant-design/x-markdown/themes/light.css";
 import { useXChat, useXConversations } from "@ant-design/x-sdk";
 import type { MessageInfo } from "@ant-design/x-sdk";
-import { XCard, registerCatalog } from "@ant-design/x-card";
+import { XCard, registerCatalog, clearCatalogCache, validateComponent, loadCatalog } from "@ant-design/x-card";
 import type { XAgentCommand_v0_9, ActionPayload } from "@ant-design/x-card";
 import { SHINY_DEFAULT_CATALOG, SHINY_DEFAULT_COMPONENTS } from "./xCardDefaults";
 import { ShinyBridgeRequest } from "./ShinyBridgeRequest";
@@ -19,6 +19,28 @@ import { AssistantContent } from "./components/AssistantContent";
 
 // Register default catalog once at module load
 registerCatalog(SHINY_DEFAULT_CATALOG);
+
+// Catalog utility message handlers — registered here so they work when using
+// antDesignXOutput (Tier 3 chat) without a standalone antDesignXCardOutput on the page.
+// Shiny.addCustomMessageHandler is idempotent when called with the same name.
+declare const Shiny: any;
+Shiny.addCustomMessageHandler("xcard:clearCatalogCache", (_msg: any) => {
+  clearCatalogCache();
+});
+Shiny.addCustomMessageHandler("xcard:validateComponent", async (msg: any) => {
+  try {
+    const catalog = await loadCatalog(msg.catalogId ?? "shiny-default");
+    const valid = validateComponent(catalog, msg.component, msg.props ?? {});
+    if (msg.inputId) {
+      Shiny.setInputValue(msg.inputId, { valid, errors: [] }, { priority: "event" });
+    }
+  } catch (err) {
+    if (msg.inputId) {
+      Shiny.setInputValue(msg.inputId,
+        { valid: false, errors: [String(err)] }, { priority: "event" });
+    }
+  }
+});
 
 // ── Main component ────────────────────────────────────────────────────────────
 interface AntDesignXProps {
