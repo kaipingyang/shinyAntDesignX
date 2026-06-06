@@ -2,38 +2,20 @@
 // Used by both the standalone xCard widget and the antDesignX chat widget.
 //
 // ── Component interaction protocol ──────────────────────────────────────────
+// Full spec: docs/xcard-interaction-protocol.md
 //
-// Components fall into three classes:
+// Class A — action-only (Button, ModalButton)
+//   onAction(name, {}) — never pass raw action.event.context
 //
-// Class A — action-only (trigger components)
-//   Button, ModalButton
-//   • Call: onAction(action.event.name, {})
-//   • Pass empty context — xCard resolves path references from dataModel
-//     internally via actionConfig. Never pass action.event.context directly
-//     (it contains raw { path } objects before resolution).
+// Class B — dataModel-only (Input, Textarea, Slider, RadioGroup, etc.)
+//   onDataChange(dataPath, value) only; action handlers read via path refs
 //
-// Class B — dataModel-only (form input components)
-//   Input, Textarea, InputNumber, Slider, CheckboxGroup, RadioGroup,
-//   Segmented, SwitchInput, Rate, Tabs, DateTimeInput, ChoicePicker, CheckBox
-//   • Call: onDataChange(dataPath, value) on change
-//   • On mount: write initial value to dataModel via useEffect([], [])
-//   • Do NOT call onAction — value is read by A-class actions via path refs
+// Class C — hybrid, pragmatic exception (Select only)
+//   onDataChange(dataPath, v) + onAction(name, {...context, value: v})
+//   Do NOT extend this pattern to other selection components.
 //
-// Class C — hybrid (dataModel write + action trigger in one interaction)
-//   Select (when both dataPath and action props are provided)
-//   • Calls onDataChange(dataPath, v) AND onAction(name, { ...context, value: v })
-//   • The explicit { value: v } in action context is intentional: it lets the
-//     action handler receive the selected value immediately without waiting for
-//     xCard to resolve a path reference. Use this pattern when the selected
-//     value must be available synchronously in the action handler.
-//
-// ── State isolation (replay-safe) ───────────────────────────────────────────
-//
-// All Class B/C components use useRef + forceUpdate (not controlled props).
-// Card.tsx replays ALL historical updateComponents on every queue append,
-// which would reset controlled (value={prop}) components to their initial
-// prop values. useRef is immune to prop changes after first render.
-// See examples/test_xcard_replay.R for verification.
+// All Class B/C components use useRef + forceUpdate (replay-safe).
+// Do NOT use updateDataModel for user-input paths — it replays and resets.
 //
 import React from "react";
 import dayjs from "dayjs";
