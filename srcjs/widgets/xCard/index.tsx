@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useEffect, useCallback, useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { XCard, registerCatalog, clearCatalogCache, validateComponent, loadCatalog } from "@ant-design/x-card";
 import type { XAgentCommand_v0_9, Catalog, ActionPayload } from "@ant-design/x-card";
@@ -22,34 +22,38 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
   }
 }
 
-// Register default catalog once
-registerCatalog(SHINY_DEFAULT_CATALOG);
+// Guard: register default catalog and Shiny handlers exactly once per page load.
+// htmlwidgets typically loads a bundle once, but a guard is cheap insurance against
+// hot-reload or multi-include scenarios re-registering handlers.
+const _win = window as any;
+if (!_win.__shinyAntDesignX_xcardInit) {
+  _win.__shinyAntDesignX_xcardInit = true;
 
-// ── Global Shiny message handlers (registered once at module load) ──────────
+  registerCatalog(SHINY_DEFAULT_CATALOG);
 
-// xcard_clear_catalog_cache(): clears all registered catalogs from memory.
-// Use before re-registering an updated catalog in the same session.
-Shiny.addCustomMessageHandler("xcard:clearCatalogCache", (_msg: any) => {
-  clearCatalogCache();
-});
+  // xcard_clear_catalog_cache(): clears all registered catalogs from memory.
+  Shiny.addCustomMessageHandler("xcard:clearCatalogCache", (_msg: any) => {
+    clearCatalogCache();
+  });
 
-// xcard_validate_component(): validates props against a registered catalog.
-// msg = { inputId, catalogId, component, props }
-// Result emitted to input$<inputId>: list(valid = TRUE/FALSE, errors = character())
-Shiny.addCustomMessageHandler("xcard:validateComponent", async (msg: any) => {
-  try {
-    const catalog = await loadCatalog(msg.catalogId ?? "shiny-default");
-    const valid = validateComponent(catalog, msg.component, msg.props ?? {});
-    if (msg.inputId) {
-      Shiny.setInputValue(msg.inputId, { valid, errors: [] }, { priority: "event" });
+  // xcard_validate_component(): validates props against a registered catalog.
+  // msg = { inputId, catalogId, component, props }
+  // Result emitted to input$<inputId>: list(valid = TRUE/FALSE, errors = character())
+  Shiny.addCustomMessageHandler("xcard:validateComponent", async (msg: any) => {
+    try {
+      const catalog = await loadCatalog(msg.catalogId ?? "shiny-default");
+      const valid = validateComponent(catalog, msg.component, msg.props ?? {});
+      if (msg.inputId) {
+        Shiny.setInputValue(msg.inputId, { valid, errors: [] }, { priority: "event" });
+      }
+    } catch (err) {
+      if (msg.inputId) {
+        Shiny.setInputValue(msg.inputId,
+          { valid: false, errors: [String(err)] }, { priority: "event" });
+      }
     }
-  } catch (err) {
-    if (msg.inputId) {
-      Shiny.setInputValue(msg.inputId,
-        { valid: false, errors: [String(err)] }, { priority: "event" });
-    }
-  }
-});
+  });
+}
 
 interface XCardWidgetProps {
   inputId?: string;
@@ -59,14 +63,17 @@ interface XCardWidgetProps {
 }
 
 function XCardWidget({ inputId, surfaceId, commands, catalog }: XCardWidgetProps) {
-  // Register custom catalog if provided
-  useMemo(() => {
+  // Register custom catalog when provided — useEffect (not useMemo) because
+  // registerCatalog is a side effect, not a derived value.
+  useEffect(() => {
     if (catalog) registerCatalog(catalog);
   }, [catalog]);
 
   const surfaceIds = Array.isArray(surfaceId) ? surfaceId : [surfaceId];
 
-  // Extract primaryColor from the last createSurface command that has a theme
+  // Extract primaryColor from the last createSurface command that has a theme.
+  // Note: one primaryColor per XCard widget instance — if surfaces need different
+  // primary colors, use separate antDesignXCardOutput() widgets.
   const primaryColor = useMemo(() => {
     for (let i = commands.length - 1; i >= 0; i--) {
       const cmd = commands[i] as any;
