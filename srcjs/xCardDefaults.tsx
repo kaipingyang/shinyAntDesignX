@@ -1,6 +1,7 @@
 // Shared default XCard catalog schema + component implementations
 // Used by both the standalone xCard widget and the antDesignX chat widget.
 import React from "react";
+import dayjs from "dayjs";
 import {
   Alert,
   Badge,
@@ -569,27 +570,53 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     );
   },
 
-  SwitchInput: ({ label, checked, dataPath, checkedText = "开", uncheckedText = "关", onDataChange }: any) => (
-    <div style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
-      {label && <span style={{ fontSize: 13 }}>{label}</span>}
-      <Switch
-        checked={checked}
-        checkedChildren={checkedText}
-        unCheckedChildren={uncheckedText}
-        onChange={(v) => { if (dataPath && onDataChange) onDataChange(dataPath, v); }}
-      />
-    </div>
-  ),
+  SwitchInput: ({ label, checked, dataPath, checkedText = "开", uncheckedText = "关", onDataChange }: any) => {
+    const checkedRef = React.useRef<boolean | undefined>(undefined);
+    const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
+    if (checkedRef.current === undefined) checkedRef.current = !!checked;
+    React.useEffect(() => {
+      if (dataPath && onDataChange) onDataChange(dataPath, checkedRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return (
+      <div style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
+        {label && <span style={{ fontSize: 13 }}>{label}</span>}
+        <Switch
+          checked={checkedRef.current}
+          checkedChildren={checkedText}
+          unCheckedChildren={uncheckedText}
+          onChange={(v) => {
+            checkedRef.current = v;
+            forceUpdate();
+            if (dataPath && onDataChange) onDataChange(dataPath, v);
+          }}
+        />
+      </div>
+    );
+  },
 
-  Rate: ({ value = 0, dataPath, count = 5, allowHalf = false, onDataChange }: any) => (
-    <Rate
-      value={value}
-      count={count}
-      allowHalf={allowHalf}
-      onChange={(v) => { if (dataPath && onDataChange) onDataChange(dataPath, v); }}
-      style={{ marginBottom: 8 }}
-    />
-  ),
+  Rate: ({ value = 0, dataPath, count = 5, allowHalf = false, onDataChange }: any) => {
+    const rateRef = React.useRef<number | undefined>(undefined);
+    const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
+    if (rateRef.current === undefined) rateRef.current = Number(value) || 0;
+    React.useEffect(() => {
+      if (dataPath && onDataChange) onDataChange(dataPath, rateRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return (
+      <Rate
+        value={rateRef.current}
+        count={count}
+        allowHalf={allowHalf}
+        onChange={(v) => {
+          rateRef.current = v;
+          forceUpdate();
+          if (dataPath && onDataChange) onDataChange(dataPath, v);
+        }}
+        style={{ marginBottom: 8 }}
+      />
+    );
+  },
 
   // ── 布局/导航类 ────────────────────────────────────────────────────────────
   Steps: ({ current = 0, items = [], size = "default", status = "process", direction = "horizontal" }: any) => (
@@ -607,19 +634,33 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     />
   ),
 
-  Tabs: ({ activeKey, items = [], dataPath, onDataChange, type = "line" }: any) => (
-    <Tabs
-      activeKey={activeKey}
-      type={type}
-      style={{ marginBottom: 8 }}
-      onChange={(key) => { if (dataPath && onDataChange) onDataChange(dataPath, key); }}
-      items={(items as any[]).map((item: any) => ({
-        key:      item.key,
-        label:    item.label,
-        children: item.content ?? item.children,
-      }))}
-    />
-  ),
+  Tabs: ({ activeKey, items = [], dataPath, onDataChange, type = "line" }: any) => {
+    const keyRef = React.useRef<string | undefined>(undefined);
+    const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
+    if (keyRef.current === undefined && activeKey !== undefined) keyRef.current = String(activeKey);
+    if (keyRef.current === undefined && items.length > 0) keyRef.current = String(items[0].key ?? "");
+    React.useEffect(() => {
+      if (dataPath && onDataChange && keyRef.current !== undefined) onDataChange(dataPath, keyRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return (
+      <Tabs
+        activeKey={keyRef.current}
+        type={type}
+        style={{ marginBottom: 8 }}
+        onChange={(key) => {
+          keyRef.current = key;
+          forceUpdate();
+          if (dataPath && onDataChange) onDataChange(dataPath, key);
+        }}
+        items={(items as any[]).map((item: any) => ({
+          key:      item.key,
+          label:    item.label,
+          children: item.content ?? item.children,
+        }))}
+      />
+    );
+  },
 
   Collapse: ({ items = [], defaultActiveKey = [], accordion = false }: any) => (
     <Collapse
@@ -699,15 +740,30 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
 
   // ── 表单补充 ────────────────────────────────────────────────────────────────
   DateTimeInput: ({ label, value, dataPath, format = "YYYY-MM-DD", showTime = false, placeholder, onDataChange }: any) => {
+    // Use ref to store current dayjs value — prevents xCard command replay from resetting selection.
+    // value prop is a date string (e.g. "2026-01-15"); parsed once on first render.
+    const dateRef = React.useRef<any>(undefined);
+    const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
+    if (dateRef.current === undefined) {
+      dateRef.current = value ? (dayjs(value).isValid() ? dayjs(value) : null) : null;
+    }
+    React.useEffect(() => {
+      const str = dateRef.current ? dateRef.current.format(format) : undefined;
+      if (dataPath && onDataChange && str) onDataChange(dataPath, str);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     return (
       <div style={{ marginBottom: 8 }}>
         {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
         <DatePicker
+          value={dateRef.current}
           format={format}
           showTime={showTime}
           placeholder={placeholder}
           style={{ width: "100%" }}
-          onChange={(_date: any, dateStr: string | string[]) => {
+          onChange={(date: any, dateStr: string | string[]) => {
+            dateRef.current = date;
+            forceUpdate();
             const str = Array.isArray(dateStr) ? dateStr[0] : dateStr;
             if (dataPath && onDataChange) onDataChange(dataPath, str);
           }}
@@ -801,8 +857,15 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
   },
 
   // ── 弹窗 ──────────────────────────────────────────────────────────────────
-  ModalButton: ({ label, title, content, okText = "确定", cancelText = "取消", variant = "default" }: any) => {
+  ModalButton: ({ label, title, content, okText = "确定", cancelText = "取消", variant = "default", action, onAction }: any) => {
     const [open, setOpen] = React.useState(false);
+    const handleOk = () => {
+      setOpen(false);
+      // Fire action event on confirm if action is configured
+      if (action?.event && onAction) {
+        onAction(action.event.context ?? {});
+      }
+    };
     return (
       <>
         <Button
@@ -817,7 +880,7 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
           title={title}
           okText={okText}
           cancelText={cancelText}
-          onOk={() => setOpen(false)}
+          onOk={handleOk}
           onCancel={() => setOpen(false)}
         >
           <p>{content}</p>
