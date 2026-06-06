@@ -861,9 +861,9 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     const [open, setOpen] = React.useState(false);
     const handleOk = () => {
       setOpen(false);
-      // Fire action event on confirm if action is configured
+      // Fire action on confirm — same protocol as Button: onAction(name, context)
       if (action?.event && onAction) {
-        onAction(action.event.context ?? {});
+        onAction(action.event.name, {});
       }
     };
     return (
