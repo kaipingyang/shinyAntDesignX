@@ -1,5 +1,9 @@
 # shinyAntDesignX — 实现计划（组件化架构）
 
+> **⚠ 历史文档** — 本文件记录的是 2026-05-28 初期组件化重构阶段的设计思路和实施路线。
+> 内容不保证与当前实现一致（例如 CodeHighlighter 的高亮引擎已从 antdx 迁移至 PrismLight）。
+> **当前实现以 `srcjs/`、`R/`、`man/`、`CLAUDE.md` 为准。**
+
 ## 战略决定（2026-05-28）
 
 **转向组件化**。原单体 widget 架构（一个 `antDesignXOutput` 包含全部功能）改为多个独立 widget，与 Ant Design X 的原子组件设计理念一致。
