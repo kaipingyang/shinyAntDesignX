@@ -71,15 +71,19 @@ onDataChange(dataPath, v)
 onAction(name, { ...context, value: v })
 ```
 
+**为什么不能用 `{ path }` 引用替代直传**：
+经 `examples/test_select_path_timing.R` 验证（2026-06-06），`onDataChange` 和 `onAction` 在同一同步回调里触发，但 xCard 内部 dataModel 更新是异步提交的。`resolveActionContextPathRefs` 运行时读到的仍是旧值，`{ path: "/region" }` 不会被解析为刚写入的新值。因此必须在 `onAction` 里直接传 `value: v`，不能依赖框架解析。
+
 **使用条件**（同时满足）：
 1. 组件配置了 `action.event`
 2. 业务要求 handler 同步拿到当前选中值
-3. 不希望依赖 path ref 解析
+3. 不希望依赖 path ref 解析（因时序问题，path ref 解析不可靠）
 
 **重要限制**：
 - 这是 pragmatic exception，不是其他输入组件的模板
 - **不应扩散到** `Tabs`、`Segmented`、`RadioGroup`、`ChoicePicker(single)` 等组件
 - 新组件默认走 Class B
+- 若未来上游修复 dataModel 同步更新时序，可重新验证是否能统一回 Class B
 
 ---
 
