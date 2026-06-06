@@ -67,6 +67,8 @@ ui <- page_fillable(
 
 server <- function(input, output, session) {
 
+  # surfaceId 随重置变化，强制 React 卸载旧 XCard.Card 挂载新的
+  sid         <- reactiveVal(surface_id)
   cmds        <- reactiveVal(list(xcard_create_surface(surface_id, send_data_model = TRUE)))
   replay_cnt  <- reactiveVal(0L)
   data_snap   <- reactiveVal(list())
@@ -74,13 +76,13 @@ server <- function(input, output, session) {
   push_cmds <- function(new_cmds) cmds(c(cmds(), new_cmds))
 
   output$test_card <- renderAntDesignXCard({
-    list(inputId = "card_action", surfaceId = surface_id, commands = cmds())
+    list(inputId = "card_action", surfaceId = sid(), commands = cmds())
   })
 
   # ① 初始化：把所有输入组件一次性推入，保持同时可见
   observeEvent(input$btn_init, {
     push_cmds(list(
-      xcard_update_components(surface_id, list(
+      xcard_update_components(sid(), list(
         # ── 文本输入 ────────────────────────────────────────────────────────
         list(id = "sec1",    component = "Divider",     text = "文本输入"),
         list(id = "inp1",    component = "Input",
@@ -147,12 +149,14 @@ server <- function(input, output, session) {
   observeEvent(input$btn_replay, {
     replay_cnt(replay_cnt() + 1L)
     push_cmds(list(
-      xcard_update_data(surface_id, "/replayCount", replay_cnt())
+      xcard_update_data(sid(), "/replayCount", replay_cnt())
     ))
   })
 
   observeEvent(input$btn_reset, {
-    cmds(list(xcard_create_surface(surface_id, send_data_model = TRUE)))
+    new_sid <- paste0(surface_id, "_", as.integer(Sys.time()))
+    sid(new_sid)
+    cmds(list(xcard_create_surface(new_sid, send_data_model = TRUE)))
     replay_cnt(0L)
     data_snap(list())
   })
