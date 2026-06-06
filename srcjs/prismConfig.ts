@@ -1,3 +1,17 @@
+// Shared Prism syntax highlighting config for codeHighlighter and xmarkdown widgets.
+//
+// Why PrismLight instead of antdx CodeHighlighter:
+//   antdx CodeHighlighter uses React.lazy() + dynamic ESM import() to load language
+//   packs on demand. Dynamic imports don't work in Vite IIFE/UMD output (no module
+//   system at runtime), so language packs silently 404 and highlighting never fires.
+//   PrismLight with static refractor imports is bundled at build time — no runtime
+//   fetches needed.
+//
+// Why CODE_TAG_PROPS needs color:inherit:
+//   antd global CSS sets <code> element color to red/pink. PrismLight renders plain
+//   text (unclassified tokens like function names in R) as bare text nodes inside
+//   <code> with no wrapping <span>, so they inherit antd's color. color:inherit
+//   breaks this inheritance and lets the theme's foreground color apply instead.
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { nightOwl } from "react-syntax-highlighter/dist/esm/styles/prism";
 import rLang from "refractor/r";
