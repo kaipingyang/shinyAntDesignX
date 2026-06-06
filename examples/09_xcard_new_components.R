@@ -49,6 +49,13 @@ ui <- page_fillable(
         actionButton("btn_checkbox",   "CheckBox",                     class = "btn-demo"),
         actionButton("btn_modal",      "ModalButton",                  class = "btn-demo"),
         hr(),
+        actionButton("btn_inputs",     "Input + Textarea + InputNumber", class = "btn-demo"),
+        actionButton("btn_slider",     "Slider",                       class = "btn-demo"),
+        actionButton("btn_cbgroup",    "CheckboxGroup",                class = "btn-demo"),
+        actionButton("btn_switch",     "SwitchInput",                  class = "btn-demo"),
+        actionButton("btn_rate",       "Rate",                         class = "btn-demo"),
+        actionButton("btn_tabs",       "Tabs",                         class = "btn-demo"),
+        hr(),
         actionButton("btn_theme",      "theme（紫色主题）",              class = "btn-demo"),
         actionButton("btn_delete_key", "updateDataModel 删除 key",     class = "btn-demo"),
         hr(),
@@ -248,6 +255,113 @@ server <- function(input, output, session) {
       xcard_update_data(surface_id, "/tempKey")
     ))
     add_log("写入 /tempKey='hello' 然后删除（value 省略）")
+  })
+
+  # ── Input + Textarea + InputNumber ──────────────────────────────────────────
+  observeEvent(input$btn_inputs, {
+    push_cmds(list(
+      xcard_update_components(surface_id, list(
+        list(id = "div_inputs", component = "Divider", text = "Input / Textarea / InputNumber"),
+        list(id = "inp1",  component = "Input",
+             label = "姓名", placeholder = "请输入姓名", dataPath = "name"),
+        list(id = "inp2",  component = "Textarea",
+             label = "备注", placeholder = "多行文本...", rows = 3L, dataPath = "remark"),
+        list(id = "inp3",  component = "InputNumber",
+             label = "年龄", value = 25L, min = 0L, max = 120L, dataPath = "age"),
+        list(id = "btn_submit_inputs", component = "Button",
+             label = "提交", variant = "primary",
+             action = list(event = list(name = "submit_inputs", context = list()))),
+        list(id = "root", component = "Container", gap = 10L,
+             children = list("div_inputs", "inp1", "inp2", "inp3", "btn_submit_inputs"))
+      ))
+    ))
+    add_log("推送 Input + Textarea + InputNumber")
+  })
+
+  # ── Slider ───────────────────────────────────────────────────────────────────
+  observeEvent(input$btn_slider, {
+    push_cmds(list(
+      xcard_update_components(surface_id, list(
+        list(id = "div_slider", component = "Divider", text = "Slider"),
+        list(id = "sl1",  component = "Slider",
+             value = 40L, min = 0L, max = 100L, step = 5L, dataPath = "volume"),
+        list(id = "sl2",  component = "Slider",
+             value = 0.5, min = 0, max = 1, step = 0.1, dataPath = "ratio",
+             marks = list(`0` = "0", `0.5` = "50%", `1` = "100%")),
+        list(id = "root", component = "Container", gap = 16L,
+             children = list("div_slider", "sl1", "sl2"))
+      ))
+    ))
+    add_log("推送 Slider")
+  })
+
+  # ── CheckboxGroup ─────────────────────────────────────────────────────────────
+  observeEvent(input$btn_cbgroup, {
+    push_cmds(list(
+      xcard_update_components(surface_id, list(
+        list(id = "div_cbg", component = "Divider", text = "CheckboxGroup"),
+        list(id = "cbg1", component = "CheckboxGroup",
+             label   = "技术栈（多选）",
+             options = list("R", "Python", "JavaScript", "Rust"),
+             value   = list("R"),
+             dataPath = "techstack"),
+        list(id = "root", component = "Container", gap = 8L,
+             children = list("div_cbg", "cbg1"))
+      ))
+    ))
+    add_log("推送 CheckboxGroup")
+  })
+
+  # ── SwitchInput ───────────────────────────────────────────────────────────────
+  observeEvent(input$btn_switch, {
+    push_cmds(list(
+      xcard_update_components(surface_id, list(
+        list(id = "div_sw", component = "Divider", text = "SwitchInput"),
+        list(id = "sw1", component = "SwitchInput",
+             label = "深色模式", checked = FALSE,
+             checkedText = "开", uncheckedText = "关", dataPath = "darkMode"),
+        list(id = "sw2", component = "SwitchInput",
+             label = "接收通知", checked = TRUE, dataPath = "notify"),
+        list(id = "root", component = "Container", gap = 8L,
+             children = list("div_sw", "sw1", "sw2"))
+      ))
+    ))
+    add_log("推送 SwitchInput")
+  })
+
+  # ── Rate ──────────────────────────────────────────────────────────────────────
+  observeEvent(input$btn_rate, {
+    push_cmds(list(
+      xcard_update_components(surface_id, list(
+        list(id = "div_rate", component = "Divider", text = "Rate"),
+        list(id = "rt1", component = "Rate",
+             value = 3L, count = 5L, dataPath = "rating"),
+        list(id = "rt2", component = "Rate",
+             value = 3.5, count = 5L, allowHalf = TRUE, dataPath = "halfRating"),
+        list(id = "root", component = "Container", gap = 12L,
+             children = list("div_rate", "rt1", "rt2"))
+      ))
+    ))
+    add_log("推送 Rate")
+  })
+
+  # ── Tabs ──────────────────────────────────────────────────────────────────────
+  observeEvent(input$btn_tabs, {
+    push_cmds(list(
+      xcard_update_components(surface_id, list(
+        list(id = "div_tabs", component = "Divider", text = "Tabs"),
+        list(id = "tb1", component = "Tabs",
+             activeKey = "tab1", dataPath = "activeTab",
+             items = list(
+               list(key = "tab1", label = "概览",  content = "这是概览内容。"),
+               list(key = "tab2", label = "详情",  content = "这是详情内容。"),
+               list(key = "tab3", label = "历史",  content = "这是历史记录。")
+             )),
+        list(id = "root", component = "Container", gap = 8L,
+             children = list("div_tabs", "tb1"))
+      ))
+    ))
+    add_log("推送 Tabs")
   })
 
   # ── 重置 ────────────────────────────────────────────────────────────────────
