@@ -353,17 +353,30 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
   ),
 
   // Input now supports dataPath + two-way binding via onDataChange
-  Input: ({ label, placeholder, defaultValue, value, dataPath, onDataChange }: any) => (
-    <div style={{ marginBottom: 8 }}>
-      {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
-      <Input
-        placeholder={placeholder}
-        defaultValue={defaultValue}
-        value={value}
-        onChange={(e) => { if (dataPath && onDataChange) onDataChange(dataPath, e.target.value); }}
-      />
-    </div>
-  ),
+  // Uses useRef to prevent xCard command replay from resetting user input.
+  Input: ({ label, placeholder, defaultValue, value, dataPath, onDataChange }: any) => {
+    const valRef = React.useRef<string | undefined>(undefined);
+    const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
+    if (valRef.current === undefined) valRef.current = value ?? defaultValue ?? "";
+    React.useEffect(() => {
+      if (dataPath && onDataChange && valRef.current !== undefined) onDataChange(dataPath, valRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return (
+      <div style={{ marginBottom: 8 }}>
+        {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
+        <Input
+          placeholder={placeholder}
+          value={valRef.current}
+          onChange={(e) => {
+            valRef.current = e.target.value;
+            forceUpdate();
+            if (dataPath && onDataChange) onDataChange(dataPath, e.target.value);
+          }}
+        />
+      </div>
+    );
+  },
 
   // Select supports both action mode (fires onAction) and dataPath mode (two-way binding).
   // Uses useRef + forceUpdate pattern (same as RadioGroup) to prevent commandQueue
@@ -481,55 +494,107 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
   ),
 
   // ── 输入类（双向绑定）──────────────────────────────────────────────────────
-  Textarea: ({ label, placeholder, value, dataPath, rows = 4, onDataChange }: any) => (
-    <div style={{ marginBottom: 8 }}>
-      {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
-      <Input.TextArea
-        placeholder={placeholder}
-        value={value}
-        rows={rows}
-        onChange={(e) => { if (dataPath && onDataChange) onDataChange(dataPath, e.target.value); }}
-      />
-    </div>
-  ),
+  Textarea: ({ label, placeholder, value, dataPath, rows = 4, onDataChange }: any) => {
+    const valRef = React.useRef<string | undefined>(undefined);
+    const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
+    if (valRef.current === undefined) valRef.current = value ?? "";
+    React.useEffect(() => {
+      if (dataPath && onDataChange && valRef.current !== undefined) onDataChange(dataPath, valRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return (
+      <div style={{ marginBottom: 8 }}>
+        {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
+        <Input.TextArea
+          placeholder={placeholder}
+          value={valRef.current}
+          rows={rows}
+          onChange={(e) => {
+            valRef.current = e.target.value;
+            forceUpdate();
+            if (dataPath && onDataChange) onDataChange(dataPath, e.target.value);
+          }}
+        />
+      </div>
+    );
+  },
 
-  InputNumber: ({ label, value, dataPath, min, max, step = 1, addonAfter, onDataChange }: any) => (
-    <div style={{ marginBottom: 8 }}>
-      {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
-      <InputNumber
-        value={value}
+  InputNumber: ({ label, value, dataPath, min, max, step = 1, addonAfter, onDataChange }: any) => {
+    const numRef = React.useRef<number | null | undefined>(undefined);
+    const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
+    if (numRef.current === undefined) numRef.current = value != null ? Number(value) : null;
+    React.useEffect(() => {
+      if (dataPath && onDataChange && numRef.current != null) onDataChange(dataPath, numRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return (
+      <div style={{ marginBottom: 8 }}>
+        {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
+        <InputNumber
+          value={numRef.current}
+          min={min}
+          max={max}
+          step={step}
+          addonAfter={addonAfter}
+          style={{ width: "100%" }}
+          onChange={(v) => {
+            numRef.current = v;
+            forceUpdate();
+            if (dataPath && onDataChange) onDataChange(dataPath, v);
+          }}
+        />
+      </div>
+    );
+  },
+
+  Slider: ({ value, dataPath, min = 0, max = 100, step = 1, marks, onDataChange }: any) => {
+    const numRef = React.useRef<number | undefined>(undefined);
+    const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
+    if (numRef.current === undefined) numRef.current = value != null ? Number(value) : 0;
+    React.useEffect(() => {
+      if (dataPath && onDataChange) onDataChange(dataPath, numRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return (
+      <Slider
+        value={numRef.current}
         min={min}
         max={max}
         step={step}
-        addonAfter={addonAfter}
-        style={{ width: "100%" }}
-        onChange={(v) => { if (dataPath && onDataChange) onDataChange(dataPath, v); }}
+        marks={marks}
+        onChange={(v) => {
+          numRef.current = v;
+          forceUpdate();
+          if (dataPath && onDataChange) onDataChange(dataPath, v);
+        }}
+        style={{ marginBottom: 8 }}
       />
-    </div>
-  ),
+    );
+  },
 
-  Slider: ({ value, dataPath, min = 0, max = 100, step = 1, marks, onDataChange }: any) => (
-    <Slider
-      value={value}
-      min={min}
-      max={max}
-      step={step}
-      marks={marks}
-      onChange={(v) => { if (dataPath && onDataChange) onDataChange(dataPath, v); }}
-      style={{ marginBottom: 8 }}
-    />
-  ),
-
-  CheckboxGroup: ({ label, options = [], value = [], dataPath, onDataChange }: any) => (
-    <div style={{ marginBottom: 8 }}>
-      {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
-      <Checkbox.Group
-        options={(options as string[]).map((o) => ({ label: o, value: o }))}
-        value={value}
-        onChange={(vals) => { if (dataPath && onDataChange) onDataChange(dataPath, vals); }}
-      />
-    </div>
-  ),
+  CheckboxGroup: ({ label, options = [], value = [], dataPath, onDataChange }: any) => {
+    const valsRef = React.useRef<string[] | undefined>(undefined);
+    const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
+    if (valsRef.current === undefined) valsRef.current = Array.isArray(value) ? value : [];
+    React.useEffect(() => {
+      if (dataPath && onDataChange) onDataChange(dataPath, valsRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return (
+      <div style={{ marginBottom: 8 }}>
+        {label && <div style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>}
+        <Checkbox.Group
+          options={(options as string[]).map((o) => ({ label: o, value: o }))}
+          value={valsRef.current}
+          onChange={(vals) => {
+            valsRef.current = vals as string[];
+            forceUpdate();
+            if (dataPath && onDataChange) onDataChange(dataPath, vals);
+          }}
+        />
+      </div>
+    );
+  },
 
   // RadioGroup: uses a stable ref to store the selected value, completely
   // independent of the value prop after first render. This prevents Card's
