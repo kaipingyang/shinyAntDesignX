@@ -541,8 +541,10 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
 
     const handleSubmit = () => {
       if (!action?.event || !onAction) return;
-      const v = selectedRef.current ?? value;
-      onAction(action.event.name, { ...action.event.context, direct_value: v });
+      // Do NOT spread action.event.context here — componentContext has higher priority
+      // in resolveActionContextPathRefs and would block path resolution. Let the
+      // framework resolve { path } refs from its configured context at click time.
+      onAction(action.event.name, { direct_value: selectedRef.current ?? value });
     };
 
     return (
