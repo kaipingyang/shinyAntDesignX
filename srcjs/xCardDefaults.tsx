@@ -541,7 +541,8 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
 
     const handleSubmit = () => {
       if (!action?.event || !onAction) return;
-      onAction(action.event.name, { direct_value: selectedRef.current ?? value });
+      const v = selectedRef.current ?? value;
+      onAction(action.event.name, { ...action.event.context, direct_value: v });
     };
 
     return (
@@ -560,7 +561,10 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
             onChange={handleChange}
           />
           {mode === "submit_action" && (
-            <Button size="small" onClick={handleSubmit}>提交</Button>
+            <button
+              style={{ fontSize: 12, padding: "2px 8px", cursor: "pointer" }}
+              onClick={handleSubmit}
+            >提交</button>
           )}
         </div>
       </div>
