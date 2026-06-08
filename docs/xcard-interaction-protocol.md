@@ -71,6 +71,10 @@ onDataChange(dataPath, v)
 onAction(name, { ...context, value: v })
 ```
 
+**精确结论（最终措辞）**：
+
+> 对选择型组件而言，dataModel + path refs 在独立提交事件中是可靠的；但在 change 事件内即时触发 action 时，当前上游实现的 dataModel 更新时序不保证最新值可见，因此 Select 必须保留 hybrid 方案。另需避免将原始 `action.event.context` 直接 spread 到组件级 context，否则可能破坏 path 解析。
+
 **为什么不能用 `{ path }` 引用替代直传（已验证，结论确定）**：
 
 经 `examples/test_select_action_timing.R` 两轮实验 + `examples/test_selectize_timing.R` 五模式实验（2026-06-08）：
@@ -103,6 +107,12 @@ onAction(name, { ...context, value: v })
 - **不应扩散到** `Tabs`、`Segmented`、`RadioGroup`、`ChoicePicker(single)` 等组件
 - 新组件默认走 Class B
 - 若未来上游修复 dataModel 同步更新时序，可重新验证是否能统一回 Class B
+
+**保留意见（维护时须知）**：
+
+1. **submit_action 成功的前提是双重的**：不只是"独立 button click"，还必须在 `handleSubmit` 里不 spread 原始 `action.event.context`。如果有人抄 submit_action 模式却把 context spread 回去，`{ path }` 对象进入 componentContext，优先级高于框架解析，path 依然会 unresolved。正确实现：`onAction(name, { direct_value: v })` — 让框架从配置好的 `action.event.context` 中自行解析 path refs。
+
+2. **实验结论适用范围仅限已测组件**：当前 timing 实验只对 Select / SelectizeProbe 做了系统验证。`Tabs`、`Segmented`、`RadioGroup`、`ChoicePicker(single)` 尚未做同规格 timing + submit-action 测试。在未经测试前，不能自动推出它们的 change-event 行为与 Select 完全相同，更不能在它们上套用 hybrid 或 submit_action 方案而不验证。
 
 ---
 
