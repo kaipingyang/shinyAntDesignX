@@ -35,7 +35,7 @@ ui <- page_fillable(
       card_header("测试结果"),
       card_body(
         overflow_y = "auto",
-        p("改变任意 SelectizeProbe 选项后（submit_action 需点"提交"）观察结果。",
+        p("改变任意 SelectizeProbe 选项后（submit_action 需点「提交」按鈕）观察结果。",
           style = "font-size:12px;color:#6b7280;"),
         tags$ul(style = "font-size:11px;color:#374151;",
           tags$li(tags$b("selected"), "：刚选的值（direct_value 或 submit 时 current）"),
