@@ -496,6 +496,77 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     );
   },
 
+  // ── SelectizeProbe ───────────────────────────────────────────────────────────
+  // Experimental probe for 5-mode timing study. NOT production. See:
+  //   examples/test_selectize_timing.R
+  //
+  // mode = "data_only"          → onDataChange; onAction({}) synchronously
+  // mode = "hybrid"             → onDataChange; onAction({ value, direct_value })
+  // mode = "micro_delayed_action" → onDataChange; Promise.resolve() → onAction({ direct_value })
+  // mode = "macro_delayed_action" → onDataChange; setTimeout(0) → onAction({ direct_value })
+  // mode = "submit_action"      → onDataChange on select; onAction({}) only on button click
+  SelectizeProbe: ({
+    label, options = [], value, dataPath, action, onAction, onDataChange,
+    mode = "data_only",
+  }: any) => {
+    const selectedRef = React.useRef<string | undefined>(undefined);
+    const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
+
+    if (selectedRef.current === undefined) selectedRef.current = value;
+
+    React.useEffect(() => {
+      if (dataPath && onDataChange && selectedRef.current !== undefined) {
+        onDataChange(dataPath, selectedRef.current);
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleChange = (v: string) => {
+      selectedRef.current = v;
+      forceUpdate();
+      if (dataPath && onDataChange) onDataChange(dataPath, v);
+      if (!action?.event || !onAction) return;
+
+      if (mode === "data_only") {
+        onAction(action.event.name, { direct_value: v });
+      } else if (mode === "hybrid") {
+        onAction(action.event.name, { ...action.event.context, value: v, direct_value: v });
+      } else if (mode === "micro_delayed_action") {
+        Promise.resolve().then(() => onAction(action.event.name, { direct_value: v }));
+      } else if (mode === "macro_delayed_action") {
+        setTimeout(() => onAction(action.event.name, { direct_value: v }), 0);
+      }
+      // submit_action: no action here — only on button click
+    };
+
+    const handleSubmit = () => {
+      if (!action?.event || !onAction) return;
+      onAction(action.event.name, { direct_value: selectedRef.current ?? value });
+    };
+
+    return (
+      <div style={{ marginBottom: 8 }}>
+        {label && (
+          <div style={{ fontSize: 13, marginBottom: 4 }}>
+            {label}
+            <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 6 }}>[{mode}]</span>
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 8 }}>
+          <Select
+            value={selectedRef.current}
+            options={(options as string[]).map((o: string) => ({ value: o, label: o }))}
+            style={{ flex: 1 }}
+            onChange={handleChange}
+          />
+          {mode === "submit_action" && (
+            <Button size="small" onClick={handleSubmit}>提交</Button>
+          )}
+        </div>
+      </div>
+    );
+  },
+
   Container: ({ children, gap = 8, padding = "0" }: { children?: React.ReactNode; gap?: number; padding?: string }) => (
     <div style={{ display: "flex", flexDirection: "column", gap, padding }}>{children}</div>
   ),
