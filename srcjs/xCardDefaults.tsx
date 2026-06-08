@@ -465,13 +465,15 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
       if (dataPath && onDataChange) onDataChange(dataPath, v);
 
       if (action?.event && onAction) {
+        // All modes pass direct_value so R can compare path_resolved == direct_value.
+        // The mode distinction is in HOW path refs are resolved, not whether value is available.
         if (mode === "data_only") {
-          onAction(action.event.name, {});
+          onAction(action.event.name, { direct_value: v });
         } else if (mode === "hybrid") {
-          onAction(action.event.name, { ...action.event.context, value: v });
+          onAction(action.event.name, { ...action.event.context, value: v, direct_value: v });
         } else if (mode === "delayed_action") {
           // Fire action in next microtask — gives dataModel time to update
-          Promise.resolve().then(() => onAction(action.event.name, {}));
+          Promise.resolve().then(() => onAction(action.event.name, { direct_value: v }));
         }
       }
     };

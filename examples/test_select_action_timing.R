@@ -33,8 +33,8 @@ ui <- page_fillable(
           style = "font-size:12px;color:#6b7280;"),
         tags$ul(style = "font-size:11px;color:#374151;",
           tags$li(tags$b("path_resolved"), "：框架通过 { path } 解析的值"),
-          tags$li(tags$b("direct_value"), "：action context 里直传的值（data_only 为空）"),
-          tags$li(tags$b("✓ path 最新"), "→ 此策略可去掉 hybrid；", tags$b("✗ 滞后"), "→ 需保留 hybrid")
+          tags$li(tags$b("direct_value"), "：刚选中的值（三种模式均传，用于与 path_resolved 比较）"),
+          tags$li(tags$b("✓ path 最新"), "→ 此策略可去掉 hybrid；", tags$b("✗ 滞后/未解析"), "→ 需保留 hybrid")
         ),
         hr(),
         actionButton("btn_reset", "重置", style = "width:100%;background:#f3f4f6;margin-bottom:8px;"),
@@ -59,7 +59,6 @@ server <- function(input, output, session) {
   log  <- reactiveVal(data.frame(
     seq           = integer(),
     mode          = character(),
-    action_name   = character(),
     path_resolved = character(),
     direct_value  = character(),
     verdict       = character(),
@@ -112,7 +111,7 @@ server <- function(input, output, session) {
     new_sid <- paste0(surface_id, "_", as.integer(Sys.time()))
     sid(new_sid)
     log(data.frame(
-      seq = integer(), mode = character(), action_name = character(),
+      seq = integer(), mode = character(),
       path_resolved = character(), direct_value = character(), verdict = character(),
       stringsAsFactors = FALSE
     ))
@@ -137,12 +136,17 @@ server <- function(input, output, session) {
       "(null)"
     }
 
-    # hybrid 直传的 value
-    direct_value <- as.character(ctx$value %||% "(not passed)")
+    # 刚选中的真实值（全部三种模式都传 direct_value）
+    direct_value <- as.character(ctx$direct_value %||% ctx$value %||% "(not passed)")
 
-    # verdict：path 是否解析到真实值（不是 unresolved / null）
-    is_resolved <- startsWith(path_resolved, "(") == FALSE
-    verdict <- if (is_resolved) "✓ path 解析成功" else "✗ path 未解析"
+    # verdict：path 解析到的值是否等于刚选的新值（而不是仅判断"是否解析成功"）
+    verdict <- if (startsWith(path_resolved, "(")) {
+      "✗ path 未解析"
+    } else if (path_resolved == direct_value) {
+      "✓ path 最新"
+    } else {
+      paste0("✗ 滞后 (path=", path_resolved, " ≠ selected=", direct_value, ")")
+    }
 
     new_row <- data.frame(
       seq           = nrow(log()) + 1L,
