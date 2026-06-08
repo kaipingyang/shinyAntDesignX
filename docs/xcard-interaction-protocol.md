@@ -73,15 +73,25 @@ onAction(name, { ...context, value: v })
 
 **为什么不能用 `{ path }` 引用替代直传（已验证，结论确定）**：
 
-经 `examples/test_select_action_timing.R` 两轮实验（2026-06-08）：
+经 `examples/test_select_action_timing.R` 两轮实验 + `examples/test_selectize_timing.R` 五模式实验（2026-06-08）：
 
 | 策略 | path_resolved | 是否可靠 |
 |------|---------------|----------|
 | data_only — `onAction(name, {})` | 解析到初始值（旧值） | ❌ |
-| delayed_action — `Promise.resolve()` 后 `onAction` | 仍是初始值（旧值） | ❌ |
+| micro_delayed — `Promise.resolve()` 后 `onAction` | 仍是初始值（旧值） | ❌ |
+| macro_delayed — `setTimeout(0)` 后 `onAction` | 仍是初始值（旧值） | ❌ |
+| submit_action — 先 `onDataChange`，**独立按钮**再 `onAction({})` | 解析到正确的最新值 | ✓ |
 | hybrid — `onAction(name, { value: v })` | 直传正确值 | ✓ |
 
-根因：`onDataChange` 写入 dataModel 是**异步**的，在 action 触发时（包括微任务延迟后）仍未落盘，`resolveActionContextPathRefs` 只能读到上一次的值。因此必须在 `onAction` 里直接传 `value: v`，hybrid 特例不是临时补丁，而是**唯一可靠方案**，永久保留。
+**根因**：`onDataChange` 写入 dataModel 是**异步**的，在同一 JS 事件回调中（包括微任务 + macro task 延迟）触发的 `onAction` 仍读到上一次的值，`resolveActionContextPathRefs` 无法见到刚写的新值。
+
+**submit_action 为何成功**：按钮点击是独立的 DOM 事件——发生在选择操作若干毫秒乃至若干秒后，此时 dataModel 已经在前一个事件循环轮次中稳定落盘，path 解析完全可靠。
+
+**实际含义**：
+- "选中即 action"（change event 直接触发 action）→ **必须 hybrid**，无论延迟多少
+- "选中写 dataModel，独立按钮/提交触发 action"（submit_action 模式）→ **可以用纯 Class B + path refs**，不需要 hybrid
+- `Select` 当前 hybrid 保留，因为业务场景是"选中即触发"
+- 若未来有"选 + 确认提交"的 UX 需求，可以新增 Class B 的 Select 变体，不走 hybrid
 
 **使用条件**（同时满足）：
 1. 组件配置了 `action.event`
@@ -156,6 +166,7 @@ RadioGroup、Segmented、Select、ChoicePicker、CheckBox、SwitchInput、Rate�
 | 规则 | 详情 |
 |------|------|
 | 默认 | 输入值 → dataModel；事件语义 → action；动态上下文 → `{ path }` 引用 |
-| 当前特例 | `Select` 保留 hybrid 行为，明确标为例外 |
+| 当前特例 | `Select` 保留 hybrid 行为（选中即 action），明确标为例外 |
 | 不推广 | `Select` 的 hybrid 模式不扩散到其他选择类组件 |
+| submit_action 模式 | 若 UX 是"先选后提交"，可用纯 Class B + 独立 Button，path refs 可靠 |
 | 长期目标 | 向上游 x-card 统一解析机制收敛，减少特例 |
