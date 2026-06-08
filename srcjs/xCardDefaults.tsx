@@ -481,6 +481,9 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
         if (mode === "data_only") {
           onAction(action.event.name, { direct_value: v });
         } else if (mode === "hybrid") {
+          // INTENTIONALLY spreads raw action.event.context (including { path } refs)
+          // to observe the unresolved/stale behavior. This is the unsafe pattern that
+          // the production Select component has been fixed to avoid. Do NOT copy this.
           onAction(action.event.name, { ...action.event.context, value: v, direct_value: v });
         } else if (mode === "delayed_action") {
           // Fire action in next microtask — gives dataModel time to update
@@ -541,6 +544,8 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
       if (mode === "data_only") {
         onAction(action.event.name, { direct_value: v });
       } else if (mode === "hybrid") {
+        // INTENTIONALLY spreads raw context (including { path } refs) to observe the
+        // unresolved behavior that production Select has been fixed to avoid. Do NOT copy.
         onAction(action.event.name, { ...action.event.context, value: v, direct_value: v });
       } else if (mode === "micro_delayed_action") {
         Promise.resolve().then(() => onAction(action.event.name, { direct_value: v }));
