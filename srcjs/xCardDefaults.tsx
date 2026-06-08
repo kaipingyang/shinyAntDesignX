@@ -424,7 +424,18 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
             selectedRef.current = v;
             forceUpdate();
             if (dataPath && onDataChange) onDataChange(dataPath, v);
-            if (action?.event && onAction) onAction(action.event.name, { ...action.event.context, value: v });
+            if (action?.event && onAction) {
+              // Filter out { path } refs from context — they resolve to stale/unresolved values
+              // in immediate-action timing (verified: test_selectize_timing.R).
+              // Static literal fields are kept; only the current value is injected directly.
+              const rawCtx = action.event.context ?? {};
+              const safeCtx = Object.fromEntries(
+                Object.entries(rawCtx).filter(([, val]) =>
+                  !(val && typeof val === "object" && "path" in (val as object))
+                )
+              );
+              onAction(action.event.name, { ...safeCtx, value: v });
+            }
           }}
         />
       </div>

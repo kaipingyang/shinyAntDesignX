@@ -68,7 +68,15 @@ action = list(event = list(
 **协议**：
 ```ts
 onDataChange(dataPath, v)
-onAction(name, { ...context, value: v })
+// Filter { path } refs from context before injecting — they resolve to stale/unresolved
+// values in immediate-action timing. Static literal fields are kept.
+const rawCtx = action.event.context ?? {};
+const safeCtx = Object.fromEntries(
+  Object.entries(rawCtx).filter(([, val]) =>
+    !(val && typeof val === "object" && "path" in val)
+  )
+);
+onAction(name, { ...safeCtx, value: v })
 ```
 
 **精确结论（最终措辞）**：
