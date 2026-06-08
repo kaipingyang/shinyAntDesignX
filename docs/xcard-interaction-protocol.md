@@ -161,6 +161,48 @@ RadioGroup、Segmented、Select、ChoicePicker、CheckBox、SwitchInput、Rate�
 
 ---
 
+## 协议红线（维护守则）
+
+以下规则永久有效，任何新组件或 PR 都不得违反：
+
+### 红线 1：不 spread 原始 action.event.context
+
+```ts
+// 错误 — 把 { path } 对象塞回 componentContext，高优先级覆盖框架解析
+onAction(name, { ...action.event.context, value: v });
+
+// 正确 — Class A 传 {}，让框架解析配置好的 context
+onAction(name, {});
+
+// 正确 — Class C hybrid 直传 value，不 spread context
+onAction(name, { value: v });
+```
+
+### 红线 2：Select hybrid 不当模板
+
+`Select` 的 `onAction(name, { value: v })` 是时序逼出来的例外，不是模式。其他组件需要 action 时，默认走 Class B（dataModel only）+ 独立 Button。
+
+### 红线 3：所有用户输入组件默认 Class B
+
+新组件默认：
+- 只 `onDataChange(dataPath, value)`
+- 不主动传 action context value
+- 依赖 path refs 解析当前值
+
+### 红线 4：给输入组件加 action 前必须做 timing test
+
+如果有人想让以下组件在选中时立即触发 action，必须先跑 timing test（参考 `examples/test_selectize_timing.R`），确认 path refs 能否可靠读到最新值，再设计协议：
+
+**高危组件**（选中语义强，容易被仿照 Select）：
+- `Tabs` — tab 切换即 action
+- `Segmented` — 选项切换即 action
+- `RadioGroup` — 选项切换即 action
+- `ChoicePicker` (single) — 点击即 action
+
+**预期结论**：这四个组件如果也走"选中即 action"，timing 问题与 Select 完全相同，结果是 path refs 读旧值。解决方案只有两个：hybrid 或 submit_action 模式。
+
+---
+
 ## 决策摘要
 
 | 规则 | 详情 |
@@ -169,4 +211,5 @@ RadioGroup、Segmented、Select、ChoicePicker、CheckBox、SwitchInput、Rate�
 | 当前特例 | `Select` 保留 hybrid 行为（选中即 action），明确标为例外 |
 | 不推广 | `Select` 的 hybrid 模式不扩散到其他选择类组件 |
 | submit_action 模式 | 若 UX 是"先选后提交"，可用纯 Class B + 独立 Button，path refs 可靠 |
+| timing test 门槛 | 任何"选中即 action"新需求，必须先过 timing test，再谈协议 |
 | 长期目标 | 向上游 x-card 统一解析机制收敛，减少特例 |

@@ -681,7 +681,8 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
     if (numRef.current === undefined) numRef.current = value != null ? Number(value) : null;
     React.useEffect(() => {
-      if (dataPath && onDataChange && numRef.current != null) onDataChange(dataPath, numRef.current);
+      // Write initial value even when null — consumer needs to know the field starts empty.
+      if (dataPath && onDataChange) onDataChange(dataPath, numRef.current ?? null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     return (
@@ -970,8 +971,9 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
       dateRef.current = value ? (dayjs(value).isValid() ? dayjs(value) : null) : null;
     }
     React.useEffect(() => {
-      const str = dateRef.current ? dateRef.current.format(format) : undefined;
-      if (dataPath && onDataChange && str) onDataChange(dataPath, str);
+      // Always write to dataModel on mount, including null (date cleared/absent).
+      const str = dateRef.current ? dateRef.current.format(format) : null;
+      if (dataPath && onDataChange) onDataChange(dataPath, str);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     return (
@@ -1052,7 +1054,9 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
 
     if (checkedRef.current === undefined) {
-      checkedRef.current = !!checked;
+      // Coerce to boolean explicitly — guard against string "false" from upstream
+      // (non-empty string is truthy in JS, so !!("false") === true is wrong).
+      checkedRef.current = checked === true || checked === 1;
     }
 
     React.useEffect(() => {
