@@ -71,8 +71,17 @@ onDataChange(dataPath, v)
 onAction(name, { ...context, value: v })
 ```
 
-**为什么不能用 `{ path }` 引用替代直传**：
-经 `examples/test_select_path_timing.R` 验证（2026-06-06），`onDataChange` 和 `onAction` 在同一同步回调里触发，但 xCard 内部 dataModel 更新是异步提交的。`resolveActionContextPathRefs` 运行时读到的仍是旧值，`{ path: "/region" }` 不会被解析为刚写入的新值。因此必须在 `onAction` 里直接传 `value: v`，不能依赖框架解析。
+**为什么不能用 `{ path }` 引用替代直传（已验证，结论确定）**：
+
+经 `examples/test_select_action_timing.R` 两轮实验（2026-06-08）：
+
+| 策略 | path_resolved | 是否可靠 |
+|------|---------------|----------|
+| data_only — `onAction(name, {})` | 解析到初始值（旧值） | ❌ |
+| delayed_action — `Promise.resolve()` 后 `onAction` | 仍是初始值（旧值） | ❌ |
+| hybrid — `onAction(name, { value: v })` | 直传正确值 | ✓ |
+
+根因：`onDataChange` 写入 dataModel 是**异步**的，在 action 触发时（包括微任务延迟后）仍未落盘，`resolveActionContextPathRefs` 只能读到上一次的值。因此必须在 `onAction` 里直接传 `value: v`，hybrid 特例不是临时补丁，而是**唯一可靠方案**，永久保留。
 
 **使用条件**（同时满足）：
 1. 组件配置了 `action.event`
