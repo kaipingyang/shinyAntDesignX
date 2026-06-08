@@ -20,25 +20,6 @@ devtools::load_all(here::here())
 
 surface_id <- "select_timing_probe"
 
-make_probe <- function(sid, probe_id, label_prefix, mode_val, data_key) {
-  list(
-    list(id = paste0("div_", probe_id), component = "Divider",
-         text  = paste0(label_prefix, " [mode=", mode_val, "]")),
-    list(id = probe_id, component = "SelectActionProbe",
-         label   = paste0("选择地区（", mode_val, "）"),
-         options = list("华东", "华南", "华北", "全国"),
-         value   = "华东",
-         dataPath = data_key,
-         mode    = mode_val,
-         action  = list(event = list(
-           name    = paste0("select:", mode_val),
-           context = list(
-             region_path = list(path = paste0("/", data_key))
-           )
-         )))
-  )
-}
-
 ui <- page_fillable(
   padding = 16,
   layout_columns(
@@ -86,24 +67,35 @@ server <- function(input, output, session) {
   ))
 
   init_cmds <- function(new_sid) {
-    probes <- c(
-      make_probe(new_sid, "probe_data_only",      "① dataModel only",    "data_only",      "region_a"),
-      make_probe(new_sid, "probe_hybrid",          "② hybrid",            "hybrid",          "region_b"),
-      make_probe(new_sid, "probe_delayed",         "③ delayed action",    "delayed_action",  "region_c")
+    components <- list(
+      # ── data_only ──────────────────────────────────────────────────────────
+      list(id = "div_a",     component = "Divider",          text = "① data_only — action fires onAction(name, {})"),
+      list(id = "probe_a",   component = "SelectActionProbe",
+           label = "选择地区", options = list("华东", "华南", "华北", "全国"),
+           value = "华东", dataPath = "region_a", mode = "data_only",
+           action = list(event = list(name = "select:data_only",
+             context = list(region_path = list(path = "/region_a"))))),
+      # ── hybrid ─────────────────────────────────────────────────────────────
+      list(id = "div_b",     component = "Divider",          text = "② hybrid — onDataChange + onAction(name, { value })"),
+      list(id = "probe_b",   component = "SelectActionProbe",
+           label = "选择地区", options = list("华东", "华南", "华北", "全国"),
+           value = "华东", dataPath = "region_b", mode = "hybrid",
+           action = list(event = list(name = "select:hybrid",
+             context = list(region_path = list(path = "/region_b"))))),
+      # ── delayed_action ─────────────────────────────────────────────────────
+      list(id = "div_c",     component = "Divider",          text = "③ delayed_action — onDataChange first, action in next microtask"),
+      list(id = "probe_c",   component = "SelectActionProbe",
+           label = "选择地区", options = list("华东", "华南", "华北", "全国"),
+           value = "华东", dataPath = "region_c", mode = "delayed_action",
+           action = list(event = list(name = "select:delayed_action",
+             context = list(region_path = list(path = "/region_c"))))),
+      # ── root ───────────────────────────────────────────────────────────────
+      list(id = "root", component = "Container", gap = 4L,
+           children = list("div_a", "probe_a", "div_b", "probe_b", "div_c", "probe_c"))
     )
-    all_ids <- sapply(probes, function(x) x$id)
-    root <- list(id = "root", component = "Container", gap = 4L,
-                 children = as.list(all_ids[!grepl("^div_", all_ids)
-                                            | grepl("div_probe", all_ids)]))
-    # Build flat component list preserving dividers
-    components <- c(probes, list(list(
-      id = "root", component = "Container", gap = 4L,
-      children = lapply(probes, function(x) x$id)
-    )))
-
     list(
       xcard_create_surface(new_sid, send_data_model = TRUE),
-      xcard_update_components(new_sid, probes)
+      xcard_update_components(new_sid, components)
     )
   }
 
