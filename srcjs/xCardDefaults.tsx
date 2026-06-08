@@ -433,6 +433,67 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
 
   Tag: ({ text, color }: any) => <Tag color={color}>{text}</Tag>,
 
+  // ── SelectActionProbe ────────────────────────────────────────────────────────
+  // Experimental component for verifying action/dataModel timing strategies.
+  // NOT a production component — used to answer whether path refs can replace
+  // direct value injection in Select hybrid mode.
+  //
+  // mode = "data_only"     → onDataChange only; action fires onAction(name, {})
+  // mode = "hybrid"        → onDataChange + onAction(name, { value }) (current Select)
+  // mode = "delayed_action"→ onDataChange first, then onAction in next microtask
+  //
+  // See examples/test_select_action_timing.R for results.
+  SelectActionProbe: ({
+    label, options = [], value, dataPath, action, onAction, onDataChange,
+    mode = "hybrid",
+  }: any) => {
+    const selectedRef = React.useRef<string | undefined>(undefined);
+    const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
+
+    if (selectedRef.current === undefined) selectedRef.current = value;
+
+    React.useEffect(() => {
+      if (dataPath && onDataChange && selectedRef.current !== undefined) {
+        onDataChange(dataPath, selectedRef.current);
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleChange = (v: string) => {
+      selectedRef.current = v;
+      forceUpdate();
+      if (dataPath && onDataChange) onDataChange(dataPath, v);
+
+      if (action?.event && onAction) {
+        if (mode === "data_only") {
+          onAction(action.event.name, {});
+        } else if (mode === "hybrid") {
+          onAction(action.event.name, { ...action.event.context, value: v });
+        } else if (mode === "delayed_action") {
+          // Fire action in next microtask — gives dataModel time to update
+          Promise.resolve().then(() => onAction(action.event.name, {}));
+        }
+      }
+    };
+
+    return (
+      <div style={{ marginBottom: 8 }}>
+        {label && (
+          <div style={{ fontSize: 13, marginBottom: 4 }}>
+            {label}
+            <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 6 }}>[mode: {mode}]</span>
+          </div>
+        )}
+        <Select
+          value={selectedRef.current}
+          options={(options as string[]).map((o: string) => ({ value: o, label: o }))}
+          style={{ width: "100%" }}
+          onChange={handleChange}
+        />
+      </div>
+    );
+  },
+
   Container: ({ children, gap = 8, padding = "0" }: { children?: React.ReactNode; gap?: number; padding?: string }) => (
     <div style={{ display: "flex", flexDirection: "column", gap, padding }}>{children}</div>
   ),
