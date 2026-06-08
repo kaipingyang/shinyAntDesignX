@@ -123,34 +123,30 @@ server <- function(input, output, session) {
     if (is.null(act$name)) return()
 
     ctx <- act$context %||% list()
+    mode_label <- sub("select:", "", act$name)
 
-    # path ref 解析结果
+    # path ref 解析结果：框架把 { path } 解析后变成 { value }
     path_val <- ctx$region_path
     path_resolved <- if (is.list(path_val) && !is.null(path_val$value)) {
-      as.character(path_val$value)
+      as.character(path_val$value)                          # 正确解析
+    } else if (is.list(path_val) && !is.null(path_val$path)) {
+      paste0("(unresolved: ", path_val$path, ")")           # 未解析，仍是 path 对象
     } else if (is.character(path_val)) {
-      path_val  # 未解析，返回了路径字符串本身
+      paste0("(raw string: ", path_val, ")")                # 返回了字符串
     } else {
       "(null)"
     }
 
-    # hybrid 直传的 value（只有 hybrid 模式有）
+    # hybrid 直传的 value
     direct_value <- as.character(ctx$value %||% "(not passed)")
 
-    # 判断：path 解析是否得到了真实值（非路径字符串）
-    is_path_resolved <- !startsWith(path_resolved, "/") && path_resolved != "(null)"
-    mode_label <- sub("select:", "", act$name)
-
-    verdict <- if (is_path_resolved) {
-      "✓ path 最新"
-    } else {
-      "✗ path 滞后"
-    }
+    # verdict：path 是否解析到真实值（不是 unresolved / null）
+    is_resolved <- startsWith(path_resolved, "(") == FALSE
+    verdict <- if (is_resolved) "✓ path 解析成功" else "✗ path 未解析"
 
     new_row <- data.frame(
       seq           = nrow(log()) + 1L,
       mode          = mode_label,
-      action_name   = act$name,
       path_resolved = path_resolved,
       direct_value  = direct_value,
       verdict       = verdict,
