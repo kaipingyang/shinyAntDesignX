@@ -11,7 +11,10 @@
 //   onDataChange(dataPath, value) only; action handlers read via path refs
 //
 // Class C — hybrid, pragmatic exception (Select only)
-//   onDataChange(dataPath, v) + onAction(name, {...context, value: v})
+//   onDataChange(dataPath, v)
+//   Filter { path } refs from action.event.context (they resolve stale in change-event timing),
+//   keep static literal fields as safeCtx, then: onAction(name, { ...safeCtx, value: v })
+//   Minimum safe form: onAction(name, { value: v }) — no context spread at all.
 //   Do NOT extend this pattern to other selection components.
 //
 // All Class B/C components use useRef + forceUpdate (replay-safe).
@@ -695,7 +698,10 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
   InputNumber: ({ label, value, dataPath, min, max, step = 1, addonAfter, onDataChange }: any) => {
     const numRef = React.useRef<number | null | undefined>(undefined);
     const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
-    if (numRef.current === undefined) numRef.current = value != null ? Number(value) : null;
+    if (numRef.current === undefined) {
+      const n = value != null ? Number(value) : null;
+      numRef.current = (n !== null && Number.isFinite(n)) ? n : null;
+    }
     React.useEffect(() => {
       // Write initial value even when null — consumer needs to know the field starts empty.
       if (dataPath && onDataChange) onDataChange(dataPath, numRef.current ?? null);
@@ -724,7 +730,14 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
   Slider: ({ value, dataPath, min = 0, max = 100, step = 1, marks, onDataChange }: any) => {
     const numRef = React.useRef<number | undefined>(undefined);
     const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
-    if (numRef.current === undefined) numRef.current = value != null ? Number(value) : 0;
+    // Slider has no "unset" UI state — antd always renders a position on the track.
+    // null/undefined initial value defaults to 0. "Never touched" and "explicitly 0" are
+    // indistinguishable in the model. If product needs empty-state semantics, use InputNumber.
+    // Invalid values (NaN, "abc") also fall back to 0 — same normalization as InputNumber.
+    if (numRef.current === undefined) {
+      const n = value != null ? Number(value) : NaN;
+      numRef.current = Number.isFinite(n) ? n : 0;
+    }
     React.useEffect(() => {
       if (dataPath && onDataChange) onDataChange(dataPath, numRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -778,14 +791,15 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
   RadioGroup: ({ label, options = [], value, dataPath, onDataChange }: any) => {
     const selectedRef = React.useRef<string | undefined>(undefined);
     const [, forceUpdate] = React.useReducer(x => x + 1, 0);
-    const mountCountRef = React.useRef(0);
 
-    mountCountRef.current += 1;
     if (selectedRef.current === undefined && value !== undefined) {
       selectedRef.current = value;
     }
 
     React.useEffect(() => {
+      // Only write on mount if an initial value exists; if value prop was absent,
+      // don't pollute the dataModel with undefined. Consumer can detect "never selected"
+      // by the absence of the path key.
       if (dataPath && onDataChange && selectedRef.current !== undefined) {
         onDataChange(dataPath, selectedRef.current);
       }
@@ -812,7 +826,9 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
   SwitchInput: ({ label, checked, dataPath, checkedText = "开", uncheckedText = "关", onDataChange }: any) => {
     const checkedRef = React.useRef<boolean | undefined>(undefined);
     const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
-    if (checkedRef.current === undefined) checkedRef.current = !!checked;
+    // Protocol: accepts boolean true/false or numeric 1/0 only. String "true"/"1" → false.
+    // If upstream passes other types, they are treated as false — intentional strictness.
+    if (checkedRef.current === undefined) checkedRef.current = checked === true || checked === 1;
     React.useEffect(() => {
       if (dataPath && onDataChange) onDataChange(dataPath, checkedRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -834,17 +850,23 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     );
   },
 
-  Rate: ({ value = 0, dataPath, count = 5, allowHalf = false, onDataChange }: any) => {
-    const rateRef = React.useRef<number | undefined>(undefined);
+  Rate: ({ value, dataPath, count = 5, allowHalf = false, onDataChange }: any) => {
+    const rateRef = React.useRef<number | null | undefined>(undefined);
     const [, forceUpdate] = React.useReducer((x: number) => x + 1, 0);
-    if (rateRef.current === undefined) rateRef.current = Number(value) || 0;
+    // null = unfilled (never rated); 0 = explicit zero; invalid/missing → null
+    if (rateRef.current === undefined) {
+      const n = Number(value);
+      rateRef.current = (value === null || value === undefined || value === "")
+        ? null
+        : Number.isFinite(n) ? n : null;
+    }
     React.useEffect(() => {
       if (dataPath && onDataChange) onDataChange(dataPath, rateRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     return (
       <Rate
-        value={rateRef.current}
+        value={rateRef.current ?? 0}  // display: null→0 stars (looks unrated); model stays null
         count={count}
         allowHalf={allowHalf}
         onChange={(v) => {
@@ -924,6 +946,7 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
     }
 
     React.useEffect(() => {
+      // Same policy as RadioGroup: only write if initial value provided.
       if (dataPath && onDataChange && selectedRef.current !== undefined) {
         onDataChange(dataPath, selectedRef.current);
       }
@@ -1004,7 +1027,8 @@ export const SHINY_DEFAULT_COMPONENTS: Record<string, React.ComponentType<any>> 
           onChange={(date: any, dateStr: string | string[]) => {
             dateRef.current = date;
             forceUpdate();
-            const str = Array.isArray(dateStr) ? dateStr[0] : dateStr;
+            // date is null when cleared — write null not "" for consistency with mount
+            const str = date ? (Array.isArray(dateStr) ? dateStr[0] : dateStr) : null;
             if (dataPath && onDataChange) onDataChange(dataPath, str);
           }}
         />

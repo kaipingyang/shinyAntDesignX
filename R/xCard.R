@@ -41,6 +41,15 @@ renderAntDesignXCard <- function(expr, env = parent.frame(), quoted = FALSE) {
 #'   `agentDisplayName` (string). Used to visually distinguish multiple agents.
 #' @param send_data_model If `TRUE`, the full data model is included in every action
 #'   payload. Default `FALSE`. Useful when the agent needs current form state.
+#'
+#'   **Timing caveat**: `send_data_model = TRUE` guarantees the data model is
+#'   present in the payload, but does **not** guarantee that `{ path }` context
+#'   refs resolve to the *latest* value when the action is triggered from inside
+#'   a `change` event (e.g. a `Select` onChange). The data model write from
+#'   `onDataChange` is asynchronous; path resolution may read the previous value.
+#'   This affects only "select-immediately-triggers-action" patterns.
+#'   For "select then submit via a separate button" patterns, path refs are
+#'   reliable. See `docs/xcard-interaction-protocol.md` Class C for details.
 #' @export
 xcard_create_surface <- function(surface_id, catalog_id = "shiny-default",
                                  theme = NULL, send_data_model = FALSE) {

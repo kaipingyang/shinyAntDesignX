@@ -124,6 +124,49 @@ onAction(name, { ...safeCtx, value: v })
 
 ---
 
+## 初始值语义分类
+
+输入组件按"未设置初始值时写入 dataModel 的内容"分三类。差异是**有意设计**，不是遗漏——不要"统一化"。
+
+### 类型 1 — UI 驱动型（总有值，null 不存在）
+
+UI 本身没有"空"状态，所以 model 也不需要空语义。
+
+| 组件 | 无初值时的默认值 | 写入 dataModel |
+|------|----------------|----------------|
+| `Slider` | `0` | 始终写，含默认 0 |
+| `Tabs` | 第一个 tab 的 key | 始终写，含自动选中的 key |
+
+**原因**：Slider 轨道必须停在某点；Tabs 必须显示一个活动面板。"未触碰 Slider" 和 "Slider 值为 0" 在 model 里不可区分——这是有意的设计折中。需要区分空值时，用 `InputNumber` 代替 `Slider`。
+
+### 类型 2 — 显式空型（空值用 null 表达）
+
+组件支持"清空"操作，清空后 model 写 `null`，而非省略路径。
+
+| 组件 | 无初值时 | 清空时 | 写入 dataModel |
+|------|---------|--------|----------------|
+| `InputNumber` | `null` | `null` | 始终写，含 null |
+| `DateTimeInput` | `null` | `null` | 始终写，含 null |
+| `Rate` | `null` | — | 始终写，含 null；UI 渲染用 `?? 0`（显示层折中，model 保持 null） |
+
+**注意**：`Rate` 的 `null` 在 UI 上显示为 0 星（antd 无"未评分"外观），但 R handler 收到的是 `NULL`，不是 `0`——这是显示层和模型层的有意分离。
+
+### 类型 3 — 缺席型（未选中 = 路径不存在）
+
+组件有合法的"从未选择"状态。若无初值，mount 不写 dataModel，该路径在 dataModel 中缺席。
+
+| 组件 | 无初值时 | mount 写入 |
+|------|---------|-----------|
+| `RadioGroup` | — | 不写 |
+| `Segmented` | — | 不写 |
+| `ChoicePicker(single)` | — | 不写 |
+
+**R handler 含义**：`ctx$some_path` 为 `NULL` 可能是"用户未选"，也可能是"组件有初值但 R 取错路径"——R 侧应区分这两种情况。若业务不允许"未选"状态，应在 R 中配置初始值，让 mount 写入该值。
+
+**不要"统一化"**：这三类组件语义不同，不要为了代码对称性把类型 3 改成写 `null`——那会破坏 R handler 对"未选"状态的判断能力。
+
+---
+
 ## Replay-safe 状态模式
 
 ### 背景
@@ -211,13 +254,24 @@ onAction(name, { value: v });
 
 如果有人想让以下组件在选中时立即触发 action，必须先跑 timing test（参考 `examples/test_selectize_timing.R`），确认 path refs 能否可靠读到最新值，再设计协议：
 
-**高危组件**（选中语义强，容易被仿照 Select）：
-- `Tabs` — tab 切换即 action
-- `Segmented` — 选项切换即 action
-- `RadioGroup` — 选项切换即 action
-- `ChoicePicker` (single) — 点击即 action
+**高危组件**（选中语义强，未来若要支持"选中即 action"最容易被仿照 `Select`）：
+- `Tabs`
+- `Segmented`
+- `RadioGroup`
+- `ChoicePicker` (single)
 
-**预期结论**：这四个组件如果也走"选中即 action"，timing 问题与 Select 完全相同，结果是 path refs 读旧值。解决方案只有两个：hybrid 或 submit_action 模式。
+**当前判断**：这些组件**很可能**面临与 `Select` 同类的 change-event 时序风险，但**尚未做同规格 timing + submit-action 实验**。因此，在未经验证前，**不得**默认套用 `Select` 的 hybrid 或 `submit_action` 方案。
+
+**要求**：若未来要让上述组件支持"选中即 action"，必须先按 `examples/test_selectize_timing.R` 的方法做专门验证，至少覆盖：
+1. `data_only`
+2. `micro_delayed_action`
+3. `macro_delayed_action`
+4. `submit_action`
+
+只有在实验结果明确后，才能决定该组件应：
+- 保持纯 Class B（`dataModel-only`）
+- 升级为 hybrid
+- 或采用"选中 + 独立提交"的 `submit_action` UX
 
 ---
 
