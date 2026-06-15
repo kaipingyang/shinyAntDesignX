@@ -57,6 +57,11 @@ export class ShinyBridgeRequest extends AbstractXRequestClass<ShinyInput, ShinyC
     const threadId = params?.threadId ?? "";
     this._currentThreadId = threadId;
 
+    // ARCHITECTURAL CONSTRAINT: bridge holds a single callback slot (currentCallbacks).
+    // Correctness depends on at most one run() being active at a time — enforced by
+    // useXChat's isRequesting guard and queueRequest. If R fails to send done/error
+    // (e.g. handler crash), _isRequesting locks and only abort() can recover.
+    // threadId filtering below is a secondary defence, not the primary lock.
     this.bridge.setRunCallbacks({
       onChunk: (text, msgThreadId) => {
         if (msgThreadId && msgThreadId !== threadId) return;

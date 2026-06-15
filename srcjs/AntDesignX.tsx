@@ -266,8 +266,8 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
           // This handles both cases: createSurface before or after on_chunk.
           if (!pendingSurfaceIdsRef.current.includes(sid)) {
             pendingSurfaceIdsRef.current.push(sid);
-            // Trigger the flush effect by bumping version
-            setCardCommandVersion((v) => v);  // no-op bump; effect watches messages not version
+            // Note: flush is driven by useEffect([messages]), not by version bump here.
+            // No explicit trigger needed — the next on_chunk will update messages and flush.
           }
         }
       } else if ("deleteSurface" in command) {
@@ -306,6 +306,13 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── conversation switch: lazy-load server sessions ────────────────────────
+  // NOTE: switching threads does NOT abort an in-flight request. Chunks for the
+  // previous thread are filtered by threadId in ShinyBridgeRequest and silently
+  // dropped — they are NOT buffered. If the user switches away mid-stream and
+  // switches back, the dropped increments will be missing from the message history.
+  // This is an accepted product trade-off (resource layer: design choice;
+  // message-continuity layer: known gap). To change behaviour, call abort() here
+  // before setActiveConversationKey.
   const handleConversationChange = useCallback((key: string) => {
     setActiveConversationKey(key);
     if (unloadedSessionIds.current.has(key)) {
