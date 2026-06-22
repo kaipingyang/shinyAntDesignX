@@ -5,8 +5,8 @@ devtools::load_all(here::here())
 # ── Handler using ellmer ──────────────────────────────────────────────────────
 handler <- make_ellmer_handler(
   chat = function() chat_openai_compatible(
-    base_url    = Sys.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
-    model       = Sys.getenv("OPENAI_MODEL",    "gpt-4o"),
+    base_url    = Sys.getenv("OPENAI_BASE_URL"),
+    model       = Sys.getenv("OPENAI_MODEL"),
     credentials = function() Sys.getenv("OPENAI_API_KEY")
   )
 )
@@ -19,9 +19,9 @@ ui <- tagList(
 server <- function(input, output, session) {
   antDesignXServer(
     "chat",
-    handler              = handler,
+    handler                = handler,
     show_conversation_list = TRUE,
-    assistant_avatar     = list(fallback = "AI")
+    assistant_avatar       = list(fallback = "AI")
   )
 }
 

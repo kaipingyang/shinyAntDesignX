@@ -15,12 +15,11 @@
     )
     if (!nzchar(trimws(text))) next
     msg <- list(
-      id      = paste0("h-", format(as.numeric(Sys.time()) * 1e3, scientific = FALSE),
-                       "-", sample.int(1e5, 1)),
-      role    = role,
-      content = list(list(type = "text", text = text))
+      key         = paste0("h-", format(as.numeric(Sys.time()) * 1e3, scientific = FALSE),
+                           "-", sample.int(1e5, 1)),
+      role        = role,
+      textContent = text
     )
-    if (identical(role, "assistant")) msg$status <- list(type = "complete", reason = "stop")
     result[[length(result) + 1L]] <- msg
   }
   result
@@ -125,6 +124,19 @@ make_ellmer_handler <- function(chat,
       Filter(function(a) identical(a$type, "image"), atts),
       function(a) ellmer::content_image_url(a$data)
     )
+
+    # PDF: base64 data URL → tmp file → content_pdf_file()
+    pdf_parts <- lapply(
+      Filter(function(a) identical(a$type, "pdf"), atts),
+      function(a) {
+        b64 <- sub("^data:[^;]+;base64,", "", a$data)
+        tmp <- tempfile(fileext = ".pdf")
+        writeBin(base64enc::base64decode(b64), tmp)
+        on.exit(unlink(tmp), add = TRUE)
+        ellmer::content_pdf_file(tmp)
+      }
+    )
+
     text_sections <- paste(
       vapply(Filter(function(a) identical(a$type, "text"), atts),
              function(a) a$data, character(1)),
@@ -137,7 +149,7 @@ make_ellmer_handler <- function(chat,
     register_cancel(function() ctrl$cancel("User interrupted"))
 
     stream <- do.call(chat_obj$stream_async,
-                      c(list(full_message), img_parts, list(controller = ctrl)))
+                      c(list(full_message), img_parts, pdf_parts, list(controller = ctrl)))
     had_error <- FALSE
     tryCatch(
       for (chunk in coro::await_each(stream)) {

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { theme as antdTheme, Avatar, ConfigProvider, Dropdown } from "antd";
+import { theme as antdTheme, Avatar, ConfigProvider, Dropdown, Image } from "antd";
 import { Bubble, Conversations, Sender, Welcome, Prompts } from "@ant-design/x";
 import type { BubbleProps, ConversationsProps } from "@ant-design/x";
 import "@ant-design/x-markdown/themes/light.css";
@@ -356,21 +356,44 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
 
   // ── file attachment ───────────────────────────────────────────────────────
   const handlePasteFile = useCallback((files: FileList) => {
-    const file = files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const data = reader.result as string;
-      const att: AttachmentData = {
-        type: file.type.startsWith("image/") ? "image" : "file",
-        name: file.name,
-        data,
-        contentType: file.type,
-      };
-      handleSubmit(inputValue || `[Attached: ${file.name}]`, [att]);
+    const attachments: AttachmentData[] = [];
+    let pending = files.length;
+    const trySubmit = () => {
+      if (--pending > 0) return;
+      const names = attachments.map((a) => a.name).join(", ");
+      handleSubmit(inputValue || `[Attached: ${names}]`, attachments);
       setInputValue("");
     };
-    reader.readAsDataURL(file);
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      if (file.type.startsWith("image/")) {
+        reader.onload = () => {
+          attachments.push({ type: "image", name: file.name, data: reader.result as string, contentType: file.type });
+          trySubmit();
+        };
+        reader.readAsDataURL(file);
+      } else if (file.type === "application/pdf") {
+        reader.onload = () => {
+          // Send as base64 data URL; R handler writes tmp file → content_pdf_file()
+          attachments.push({ type: "pdf", name: file.name, data: reader.result as string, contentType: file.type });
+          trySubmit();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        reader.onload = () => {
+          // Match shinyAssistantUI <attachment> wrapping so R handler embeds content in message
+          attachments.push({
+            type: "text",
+            name: file.name,
+            data: `<attachment name="${file.name}">\n${reader.result as string}\n</attachment>`,
+            contentType: file.type || "text/plain",
+          });
+          trySubmit();
+        };
+        reader.readAsText(file);
+      }
+    });
   }, [inputValue, handleSubmit]);
 
   // ── Bubble.List items ─────────────────────────────────────────────────────
@@ -378,7 +401,39 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
     return messages.map(({ id, message, status }, idx) => {
       const isStreaming = status === "loading" || status === "updating";
       if (message.role === "user") {
-        return { key: id, role: "user", content: message.textContent, typing: false };
+        const atts = message.attachments ?? [];
+        const userContent = (
+          <div>
+            {message.textContent && (
+              <div style={{ marginBottom: atts.length > 0 ? 6 : 0 }}>{message.textContent}</div>
+            )}
+            {atts.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+                {atts.map((att, i) => {
+                  if (att.type === "image") {
+                    return (
+                      <Image
+                        key={i}
+                        src={att.data}
+                        alt={att.name}
+                        style={{ maxHeight: 120, maxWidth: 200, borderRadius: 6, objectFit: "cover", cursor: "pointer" }}
+                        preview={{ src: att.data }}
+                      />
+                    );
+                  }
+                  const icon = att.type === "pdf" ? "📄" : "📎";
+                  return (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", background: "rgba(0,0,0,0.05)", borderRadius: 6, fontSize: 12, maxWidth: 200 }}>
+                      <span>{icon}</span>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{att.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+        return { key: id, role: "user", content: userContent, typing: false };
       }
       // Find the preceding user message — walk backwards, no allocation
       let reloadQuery = "";
@@ -418,6 +473,7 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
     user: { placement: "end" as const },
     assistant: {
       placement: "start" as const,
+      style: { maxWidth: "100%" },
       avatar: avatarConfig.src
         ? <Avatar src={avatarConfig.src} alt={avatarConfig.alt ?? "AI"} />
         : <Avatar>{avatarConfig.fallback ?? "AI"}</Avatar>,
@@ -463,9 +519,10 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   const handleNewConversation = useCallback(() => {
     const newId = makeThreadId();
     localThreadIds.current.add(newId);
-    addConversation({ key: newId, label: "New Chat" });
+    // prepend so new chat appears at the top of the list
+    setConversations([{ key: newId, label: "New Chat" }, ...conversations]);
     setActiveConversationKey(newId);
-  }, [addConversation, setActiveConversationKey]);
+  }, [conversations, setConversations, setActiveConversationKey]);
 
   // ── render ────────────────────────────────────────────────────────────────
   return (
@@ -518,6 +575,7 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
               ref={fileInputRef}
               type="file"
               multiple
+              accept="image/*,application/pdf,text/plain,text/html,text/markdown,text/csv,text/xml,text/json,text/css"
               style={{ display: "none" }}
               onChange={(e) => {
                 if (e.target.files) handlePasteFile(e.target.files);
@@ -561,6 +619,18 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
                   loading={isRequesting}
                   placeholder="Send a message… (/ for commands)"
                   allowSpeech
+                  prefix={
+                    <button
+                      type="button"
+                      title="Attach file"
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: "0 4px", color: "#9ca3af", display: "flex", alignItems: "center" }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                      </svg>
+                    </button>
+                  }
                 />
               </div>
             </Dropdown>
