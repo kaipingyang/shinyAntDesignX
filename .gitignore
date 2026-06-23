@@ -23,3 +23,5 @@ ant-design-x-src/
 .DS_Store
 *.log
 .Renviron
+.sessions/
+image/

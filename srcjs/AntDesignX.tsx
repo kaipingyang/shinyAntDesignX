@@ -136,6 +136,9 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   // ── xCard config ──────────────────────────────────────────────────────────
   const xcardMode = config.xcard_mode ?? "inline";
   const xcardPanelWidth = config.xcard_panel_width ?? 360;
+  const allowSpeech = config.allow_speech !== false;
+  const allowUpload = config.allow_upload !== false;
+  const strings = config.strings ?? {};
 
   // ── xCard command queue (single append-only array for XCard.Box) ──────────
   // XCard.Box tracks processedCommandsCount — the array must be append-only and
@@ -548,8 +551,8 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
           {showWelcome && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "24px" }}>
               <Welcome
-                title={typeof avatarConfig.fallback === "string" ? avatarConfig.fallback : "AI Assistant"}
-                description="How can I help you today?"
+                title={strings.welcome_title ?? (typeof avatarConfig.fallback === "string" ? avatarConfig.fallback : "AI Assistant")}
+                description={strings.welcome_description ?? "How can I help you today?"}
                 style={{ marginBottom: 24 }}
               />
               {suggestions.length > 0 && (
@@ -606,20 +609,31 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
                   }}
                   onSubmit={(text) => {
                     setSlashOpen(false);
-                    const match = text.trim().match(/^\/(\S+)/);
+                    const match = text.trim().match(/^\/(\S+)(?:\s+(.*))?$/);
                     if (match) {
                       const cmd = commands.find((c) => c.name === match[1]);
-                      if (cmd) { setInputValue(""); handleSubmit(cmd.prompt); return; }
+                      if (cmd) {
+                        setInputValue("");
+                        const args = (match[2] ?? "").trim();
+                        // Replace {args} placeholder if present, else append args to prompt
+                        const finalPrompt = args
+                          ? (cmd.prompt.includes("{args}")
+                              ? cmd.prompt.replace("{args}", args)
+                              : `${cmd.prompt} ${args}`)
+                          : cmd.prompt;
+                        handleSubmit(finalPrompt);
+                        return;
+                      }
                     }
                     setInputValue("");
                     handleSubmit(text);
                   }}
                   onCancel={abort}
-                  onPasteFile={handlePasteFile}
+                  onPasteFile={allowUpload ? handlePasteFile : undefined}
                   loading={isRequesting}
-                  placeholder="Send a message… (/ for commands)"
-                  allowSpeech
-                  prefix={
+                  placeholder={strings.placeholder ?? "Send a message… (/ for commands)"}
+                  allowSpeech={allowSpeech}
+                  prefix={allowUpload ? (
                     <button
                       type="button"
                       title="Attach file"
@@ -630,7 +644,7 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
                         <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
                       </svg>
                     </button>
-                  }
+                  ) : undefined}
                 />
               </div>
             </Dropdown>

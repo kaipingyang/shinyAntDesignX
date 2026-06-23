@@ -21,8 +21,10 @@ export interface WidgetConfig {
   commands?:      Array<{ name: string; description: string; prompt: string; category?: string }>;
   tools?:         Array<{ name: string; description: string }>;
   action_items?:  Array<{ section: string; id: string; label: string; description?: string }>;
-  strings?:       Record<string, unknown>;
+  strings?:       Record<string, string>;  // welcome_title, welcome_description, placeholder
   assistant_avatar?: { fallback?: string; src?: string; alt?: string };
   xcard_mode?:    "inline" | "panel";  // default: "inline"
   xcard_panel_width?: number;           // panel mode width px, default: 360
+  allow_speech?:  boolean;              // default: true
+  allow_upload?:  boolean;              // default: true
 }

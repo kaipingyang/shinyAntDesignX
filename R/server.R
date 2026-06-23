@@ -43,8 +43,11 @@
 #' @param on_session_load `function(session_id, thread_id, send_thread)` for
 #'   lazy-loading historical session messages.
 #' @param on_feedback `function(message_id, type)` for thumbs up/down feedback.
-#' @param strings Optional named list for overriding UI text.
+#' @param strings Optional named list for overriding UI text. Recognized keys:
+#'   `welcome_title`, `welcome_description`, `placeholder`.
 #' @param assistant_avatar Named list with `fallback`, `src`, `alt` fields.
+#' @param allow_speech Logical. If `FALSE`, hide the speech input button. Default `TRUE`.
+#' @param allow_upload Logical. If `FALSE`, hide the file attachment button. Default `TRUE`.
 #'
 #' @return A list with `clear()`, `send_tool_call()`, `send_tool_result()`,
 #'   `send_sessions()`, `send_card_command(command, thread_id)`, and
@@ -64,11 +67,14 @@ antDesignXServer <- function(id, handler,
                              on_session_load        = NULL,
                              on_feedback            = NULL,
                              strings                = NULL,
-                             assistant_avatar       = list(fallback = "AI")) {
+                             assistant_avatar       = list(fallback = "AI"),
+                             allow_speech           = TRUE,
+                             allow_upload           = TRUE) {
   force(show_conversation_list); force(xcard_mode); force(xcard_panel_width)
   force(suggestions); force(commands)
   force(tools); force(action_items); force(on_action); force(on_session_load)
   force(on_feedback); force(strings); force(assistant_avatar)
+  force(allow_speech); force(allow_upload)
   if (!is.numeric(xcard_panel_width) || xcard_panel_width <= 0)
     stop("`xcard_panel_width` must be a positive number")
   session  <- shiny::getDefaultReactiveDomain()
@@ -81,7 +87,9 @@ antDesignXServer <- function(id, handler,
     suggestions            = suggestions,
     commands               = commands,
     tools                  = tools,
-    action_items           = action_items
+    action_items           = action_items,
+    allow_speech           = isTRUE(allow_speech),
+    allow_upload           = isTRUE(allow_upload)
   )
   if (!is.null(strings))          config$strings          <- strings
   if (!is.null(assistant_avatar)) config$assistant_avatar <- assistant_avatar

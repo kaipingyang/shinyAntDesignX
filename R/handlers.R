@@ -49,7 +49,8 @@
 make_ellmer_handler <- function(chat,
                                 tools          = NULL,
                                 approval_tools = character(0),
-                                store          = NULL) {
+                                store          = NULL,
+                                on_tool_result = NULL) {
   chats <- list()
 
   get_chat_obj <- function(thread_id) {
@@ -97,6 +98,16 @@ make_ellmer_handler <- function(chat,
         result       = if (!is.null(result@error)) result@error else result@value,
         is_error     = !is.null(result@error)
       )
+      # Extra hook — caller can push xCard commands, update reactive values, etc.
+      if (!is.null(on_tool_result)) {
+        on_tool_result(
+          tool_name    = result@request@name,
+          tool_call_id = result@request@id,
+          result       = if (!is.null(result@error)) result@error else result@value,
+          is_error     = !is.null(result@error),
+          thread_id    = current$thread_id
+        )
+      }
     })
 
     obj <- list(chat = chat_obj, current = current)
@@ -107,8 +118,8 @@ make_ellmer_handler <- function(chat,
   coro::async(function(
     message, thread_id, attachments,
     on_chunk, on_done, on_error,
-    on_tool_call, on_tool_result, is_cancelled,
-    wait_for_approval, register_cancel
+    on_tool_call, on_tool_result, on_thinking,
+    is_cancelled, wait_for_approval, register_cancel
   ) {
     obj      <- get_chat_obj(thread_id)
     chat_obj <- obj$chat
@@ -117,6 +128,7 @@ make_ellmer_handler <- function(chat,
     current$on_tool_call      <- on_tool_call
     current$on_tool_result    <- on_tool_result
     current$wait_for_approval <- wait_for_approval
+    current$thread_id         <- thread_id
 
     atts <- attachments %||% list()
 
@@ -149,12 +161,19 @@ make_ellmer_handler <- function(chat,
     register_cancel(function() ctrl$cancel("User interrupted"))
 
     stream <- do.call(chat_obj$stream_async,
-                      c(list(full_message), img_parts, pdf_parts, list(controller = ctrl)))
+                      c(list(full_message), img_parts, pdf_parts,
+                        list(stream = "content", controller = ctrl)))
     had_error <- FALSE
     tryCatch(
       for (chunk in coro::await_each(stream)) {
         if (is_cancelled()) break
-        on_chunk(chunk)
+        if (inherits(chunk, "ellmer::ContentThinking")) {
+          on_thinking(chunk@thinking)
+        } else if (is.character(chunk)) {
+          on_chunk(chunk)
+        } else if (inherits(chunk, "ellmer::ContentText")) {
+          on_chunk(chunk@text)
+        }
       },
       error = function(e) {
         had_error <<- TRUE
