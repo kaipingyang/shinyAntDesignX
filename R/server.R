@@ -48,6 +48,12 @@
 #' @param assistant_avatar Named list with `fallback`, `src`, `alt` fields.
 #' @param allow_speech Logical. If `FALSE`, hide the speech input button. Default `TRUE`.
 #' @param allow_upload Logical. If `FALSE`, hide the file attachment button. Default `TRUE`.
+#' @param bubble_style Optional named list controlling bubble appearance. Each of `assistant`
+#'   and `user` accepts:
+#'   * `variant` — `"filled"` (default grey), `"borderless"` (no background), `"outlined"` (border),
+#'     `"shadow"` (drop shadow)
+#'   * `shape` — `"default"`, `"round"`, `"corner"`
+#'   Example: `list(assistant = list(variant = "borderless"), user = list(variant = "filled", shape = "round"))`
 #'
 #' @return A list with `clear()`, `send_tool_call()`, `send_tool_result()`,
 #'   `send_sessions()`, `send_card_command(command, thread_id)`, and
@@ -69,12 +75,13 @@ antDesignXServer <- function(id, handler,
                              strings                = NULL,
                              assistant_avatar       = list(fallback = "AI"),
                              allow_speech           = TRUE,
-                             allow_upload           = TRUE) {
+                             allow_upload           = TRUE,
+                             bubble_style           = NULL) {
   force(show_conversation_list); force(xcard_mode); force(xcard_panel_width)
   force(suggestions); force(commands)
   force(tools); force(action_items); force(on_action); force(on_session_load)
   force(on_feedback); force(strings); force(assistant_avatar)
-  force(allow_speech); force(allow_upload)
+  force(allow_speech); force(allow_upload); force(bubble_style)
   if (!is.numeric(xcard_panel_width) || xcard_panel_width <= 0)
     stop("`xcard_panel_width` must be a positive number")
   session  <- shiny::getDefaultReactiveDomain()
@@ -93,6 +100,7 @@ antDesignXServer <- function(id, handler,
   )
   if (!is.null(strings))          config$strings          <- strings
   if (!is.null(assistant_avatar)) config$assistant_avatar <- assistant_avatar
+  if (!is.null(bubble_style))     config$bubble_style     <- bubble_style
 
   session$output[[id]] <- renderAntDesignX(
     config   = config,

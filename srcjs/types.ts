@@ -27,4 +27,8 @@ export interface WidgetConfig {
   xcard_panel_width?: number;           // panel mode width px, default: 360
   allow_speech?:  boolean;              // default: true
   allow_upload?:  boolean;              // default: true
+  bubble_style?: {
+    assistant?: { variant?: "filled" | "borderless" | "outlined" | "shadow"; shape?: "default" | "round" | "corner" };
+    user?:      { variant?: "filled" | "borderless" | "outlined" | "shadow"; shape?: "default" | "round" | "corner" };
+  };
 }

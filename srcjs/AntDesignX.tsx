@@ -139,6 +139,7 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   const allowSpeech = config.allow_speech !== false;
   const allowUpload = config.allow_upload !== false;
   const strings = config.strings ?? {};
+  const bubbleStyleCfg = config.bubble_style ?? {};
 
   // ── xCard command queue (single append-only array for XCard.Box) ──────────
   // XCard.Box tracks processedCommandsCount — the array must be append-only and
@@ -473,15 +474,21 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
 
   // ── bubble role config ────────────────────────────────────────────────────
   const bubbleRoles = useMemo(() => ({
-    user: { placement: "end" as const },
+    user: {
+      placement: "end" as const,
+      variant: (bubbleStyleCfg.user?.variant ?? "shadow") as any,
+      shape:   (bubbleStyleCfg.user?.shape   ?? "round")  as any,
+    },
     assistant: {
       placement: "start" as const,
+      variant: (bubbleStyleCfg.assistant?.variant ?? "shadow") as any,
+      ...(bubbleStyleCfg.assistant?.shape && { shape: bubbleStyleCfg.assistant.shape as any }),
       style: { maxWidth: "100%" },
       avatar: avatarConfig.src
         ? <Avatar src={avatarConfig.src} alt={avatarConfig.alt ?? "AI"} />
         : <Avatar>{avatarConfig.fallback ?? "AI"}</Avatar>,
     },
-  }), [avatarConfig]);
+  }), [avatarConfig, bubbleStyleCfg]);
 
   // ── conversations menu (archive / delete) ─────────────────────────────────
   const conversationMenu: ConversationsProps["menu"] = useCallback(
@@ -550,11 +557,14 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
 
           {showWelcome && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "24px" }}>
-              <Welcome
-                title={strings.welcome_title ?? (typeof avatarConfig.fallback === "string" ? avatarConfig.fallback : "AI Assistant")}
-                description={strings.welcome_description ?? "How can I help you today?"}
-                style={{ marginBottom: 24 }}
-              />
+              <div style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.12)", borderRadius: 12, marginBottom: 24, width: "100%", maxWidth: 560 }}>
+                <Welcome
+                  variant="borderless"
+                  title={strings.welcome_title ?? (typeof avatarConfig.fallback === "string" ? avatarConfig.fallback : "AI Assistant")}
+                  description={strings.welcome_description ?? "How can I help you today?"}
+                  style={{ padding: "16px 20px" }}
+                />
+              </div>
               {suggestions.length > 0 && (
                 <Prompts
                   items={suggestions.map((s, i) => ({ key: String(i), description: s.text ?? s.prompt }))}
