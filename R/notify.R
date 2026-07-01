@@ -1,4 +1,4 @@
-#' Notify Widget — antd in-page notification (corner card)
+#' Notification Widget — antd in-page notification (corner card)
 #'
 #' Fires an antd `notification` card inside the page (a viewport corner, with a
 #' title + description). Unlike [antDesignXNotificationOutput()] (OS-level browser
@@ -18,12 +18,12 @@
 #' @param width,height CSS dimensions (default height 0px).
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
-antDesignNotifyOutput <- function(outputId, width = "0px", height = "0px", ...) {
+antDesignNotificationOutput <- function(outputId, width = "0px", height = "0px", ...) {
   htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "notify",
     width = width, height = height, package = "shinyAntDesignX", ...)
 }
 
-#' Render Notify Widget
+#' Render Notification Widget
 #'
 #' @param expr A list with: `message` (required string — the card title),
 #'   `description` (string), `type` (one of `"success"`, `"error"`, `"info"`,
@@ -34,10 +34,10 @@ antDesignNotifyOutput <- function(outputId, width = "0px", height = "0px", ...) 
 #'   `ts` (optional; bump to re-fire), `inputId` (optional — click/close emit to Shiny).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderAntDesignNotify <- function(expr, env = parent.frame(), quoted = FALSE) {
+renderAntDesignNotification <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
   htmlwidgets::shinyRenderWidget(
     expr           = bquote(htmlwidgets::createWidget(
                        name = "notify", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = antDesignNotifyOutput, env = baseenv(), quoted = TRUE)
+    outputFunction = antDesignNotificationOutput, env = baseenv(), quoted = TRUE)
 }
