@@ -19,11 +19,7 @@ dependencies:
     version: 6.4.2
     src: www/lib/antd
     script: antd.min.js
-  - name: antdx
-    version: 2.7.0
-    src: www/lib/antdx
-    script: antdx.min.js
-  - name: notification
+  - name: notify
     version: 0.2.0
     src: www
-    script: notification.js
+    script: notify.js

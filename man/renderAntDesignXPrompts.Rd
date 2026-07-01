@@ -7,8 +7,12 @@
 renderAntDesignXPrompts(expr, env = parent.frame(), quoted = FALSE)
 }
 \arguments{
-\item{expr}{A list with: `inputId` (string), `items` (list of `list(key, label, description)`),
-`title` (string), `vertical` (logical), `wrap` (logical).}
+\item{expr}{A list with: `inputId` (string), `items` (list of
+`list(key, label, description, icon, disabled)`), `title` (string),
+`vertical` (logical), `wrap` (logical).
+`icon` accepts a preset name: `bulb`, `fire`, `rocket`, `read`, `comment`,
+`check`, `info`, `star`, `thunder`, `smile`, `heart`, `coffee`, `question`.
+`disabled = TRUE` greys out and disables click for that item.}
 
 \item{env, quoted}{Passed to [shiny::exprToFunction()].}
 }

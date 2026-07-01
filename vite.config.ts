@@ -24,6 +24,8 @@ const entryMap: Record<string, string> = {
   attachments:     "srcjs/widgets/attachments/index.tsx",
   suggestion:      "srcjs/widgets/suggestion/index.tsx",
   notification:    "srcjs/widgets/notification/index.tsx",
+  message:         "srcjs/widgets/message/index.tsx",
+  notify:          "srcjs/widgets/notify/index.tsx",
   xCard:           "srcjs/widgets/xCard/index.tsx",
 };
 

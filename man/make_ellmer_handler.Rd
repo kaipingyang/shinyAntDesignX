@@ -8,7 +8,8 @@ make_ellmer_handler(
   chat,
   tools = NULL,
   approval_tools = character(0),
-  store = NULL
+  store = NULL,
+  on_tool_result = NULL
 )
 }
 \arguments{

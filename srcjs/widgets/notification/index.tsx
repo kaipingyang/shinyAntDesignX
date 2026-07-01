@@ -1,42 +1,49 @@
 import ReactDOM from "react-dom/client";
 import { ConfigProvider, theme as antdTheme } from "antd";
+import { notification as xNotification } from "@ant-design/x";
 import React, { useEffect } from "react";
 
 // @ts-ignore
 declare const HTMLWidgets: any;
 declare const Shiny: any;
 
-// XNotification uses browser Notification API directly — no React component needed
+// Uses upstream XNotification (tag-based dedup via permissionMap).
+// NOTE: duration is in SECONDS (matches upstream — internally multiplied by 1000).
 interface NotificationWidgetProps {
   inputId?: string;
   title: string;
   body?: string;
   icon?: string;
   tag?: string;
-  duration?: number;
+  duration?: number;            // seconds (upstream semantics)
   requireInteraction?: boolean;
   requestPermission?: boolean;
 }
 
-function NotificationWidget({ inputId, title, body, icon, tag, duration = 4000, requireInteraction = false, requestPermission = false }: NotificationWidgetProps) {
+function NotificationWidget({ inputId, title, body, icon, tag, duration = 4, requireInteraction = false, requestPermission = false }: NotificationWidgetProps) {
   useEffect(() => {
     const fire = () => {
-      const n = new Notification(title, { body, icon, tag, requireInteraction });
-      if (duration && !requireInteraction) {
-        setTimeout(() => n.close(), duration);
-      }
-      if (inputId) {
-        n.onclick = () => {
-          Shiny.setInputValue(inputId, { action: "click", tag: tag ?? title, ts: Date.now() }, { priority: "event" });
-          n.close();
-        };
-      }
+      xNotification.open({
+        title,
+        body,
+        icon,
+        tag,
+        requireInteraction,
+        // duration omitted when requireInteraction so the notification stays open
+        ...(requireInteraction ? {} : { duration }),
+        onClick: (_event: Event, close: () => void) => {
+          if (inputId) {
+            Shiny.setInputValue(inputId, { action: "click", tag: tag ?? title, ts: Date.now() }, { priority: "event" });
+          }
+          close();
+        },
+      } as any);
     };
 
-    if (Notification.permission === "granted") {
+    if (xNotification.permission === "granted") {
       fire();
-    } else if (Notification.permission !== "denied" && requestPermission) {
-      Notification.requestPermission().then((perm) => {
+    } else if (xNotification.permission !== "denied" && requestPermission) {
+      xNotification.requestPermission().then((perm: NotificationPermission) => {
         if (perm === "granted") fire();
       });
     }

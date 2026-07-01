@@ -8,8 +8,9 @@ renderAntDesignXNotification(expr, env = parent.frame(), quoted = FALSE)
 }
 \arguments{
 \item{expr}{A list with: `title` (required), `body`, `icon` (URL), `tag`,
-`duration` (ms, default 4000), `requireInteraction` (logical),
-`requestPermission` (logical, request on first fire).
+`duration` (seconds, default 4 — matches upstream XNotification; tag-based
+dedup prevents duplicate notifications with the same `tag`),
+`requireInteraction` (logical), `requestPermission` (logical, request on first fire).
 `inputId` optional — if set, clicking notification emits to Shiny.}
 
 \item{env, quoted}{Passed to [shiny::exprToFunction()].}

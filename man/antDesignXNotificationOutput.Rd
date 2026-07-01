@@ -18,3 +18,10 @@ Fires a browser push notification. Renders no visible UI.
 Requires browser permission — first use should set `requestPermission = TRUE`.
 Click emits to `input$<inputId>` as `list(action = "click", tag = ...)`.
 }
+\section{Repeat notifications}{
+
+Because the output div is hidden (height 0), Shiny suspends it by default and
+subsequent fires are dropped. To fire more than once, disable suspension:
+`outputOptions(output, "<id>", suspendWhenHidden = FALSE)`.
+}
+

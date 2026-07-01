@@ -18,7 +18,10 @@ antDesignXServer(
   on_session_load = NULL,
   on_feedback = NULL,
   strings = NULL,
-  assistant_avatar = list(fallback = "AI")
+  assistant_avatar = list(fallback = "AI"),
+  allow_speech = TRUE,
+  allow_upload = TRUE,
+  bubble_style = NULL
 )
 }
 \arguments{
@@ -71,9 +74,21 @@ lazy-loading historical session messages.}
 
 \item{on_feedback}{`function(message_id, type)` for thumbs up/down feedback.}
 
-\item{strings}{Optional named list for overriding UI text.}
+\item{strings}{Optional named list for overriding UI text. Recognized keys:
+`welcome_title`, `welcome_description`, `placeholder`.}
 
 \item{assistant_avatar}{Named list with `fallback`, `src`, `alt` fields.}
+
+\item{allow_speech}{Logical. If `FALSE`, hide the speech input button. Default `TRUE`.}
+
+\item{allow_upload}{Logical. If `FALSE`, hide the file attachment button. Default `TRUE`.}
+
+\item{bubble_style}{Optional named list controlling bubble appearance. Each of `assistant`
+and `user` accepts:
+* `variant` — `"filled"` (default grey), `"borderless"` (no background), `"outlined"` (border),
+  `"shadow"` (drop shadow)
+* `shape` — `"default"`, `"round"`, `"corner"`
+Example: `list(assistant = list(variant = "borderless"), user = list(variant = "filled", shape = "round"))`}
 }
 \value{
 A list with `clear()`, `send_tool_call()`, `send_tool_result()`,

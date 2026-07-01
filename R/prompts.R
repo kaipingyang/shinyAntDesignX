@@ -13,8 +13,12 @@ antDesignXPromptsOutput <- function(outputId, width = "100%", height = "auto", .
 
 #' Render Prompts Widget
 #'
-#' @param expr A list with: `inputId` (string), `items` (list of `list(key, label, description)`),
-#'   `title` (string), `vertical` (logical), `wrap` (logical).
+#' @param expr A list with: `inputId` (string), `items` (list of
+#'   `list(key, label, description, icon, disabled)`), `title` (string),
+#'   `vertical` (logical), `wrap` (logical).
+#'   `icon` accepts a preset name: `bulb`, `fire`, `rocket`, `read`, `comment`,
+#'   `check`, `info`, `star`, `thunder`, `smile`, `heart`, `coffee`, `question`.
+#'   `disabled = TRUE` greys out and disables click for that item.
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
 renderAntDesignXPrompts <- function(expr, env = parent.frame(), quoted = FALSE) {
