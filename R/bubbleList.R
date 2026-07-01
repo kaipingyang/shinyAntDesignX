@@ -5,8 +5,7 @@
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
 antDesignXBubbleListOutput <- function(outputId, width = "100%", height = "500px", ...) {
-  htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "bubbleList",
-    width = width, height = height, package = "shinyAntDesignX", ...)
+  .widget_output_body("bubbleList", outputId, width, height, ...)
 }
 
 #' Render Bubble List Widget
@@ -18,10 +17,4 @@ antDesignXBubbleListOutput <- function(outputId, width = "100%", height = "500px
 #'   * `userPlacement` — `"start"` or `"end"` (default).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderAntDesignXBubbleList <- function(expr, env = parent.frame(), quoted = FALSE) {
-  func <- shiny::exprToFunction(expr, env, quoted)
-  htmlwidgets::shinyRenderWidget(
-    expr           = bquote(htmlwidgets::createWidget(
-                       name = "bubbleList", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = antDesignXBubbleListOutput, env = baseenv(), quoted = TRUE)
-}
+renderAntDesignXBubbleList <- .make_render_widget("bubbleList", antDesignXBubbleListOutput)

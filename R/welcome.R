@@ -5,8 +5,7 @@
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
 antDesignXWelcomeOutput <- function(outputId, width = "100%", height = "auto", ...) {
-  htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "welcome",
-    width = width, height = height, package = "shinyAntDesignX", ...)
+  .widget_output_body("welcome", outputId, width, height, ...)
 }
 
 #' Render Welcome Widget
@@ -15,10 +14,4 @@ antDesignXWelcomeOutput <- function(outputId, width = "100%", height = "auto", .
 #'   `variant` (`"filled"` or `"borderless"`).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderAntDesignXWelcome <- function(expr, env = parent.frame(), quoted = FALSE) {
-  func <- shiny::exprToFunction(expr, env, quoted)
-  htmlwidgets::shinyRenderWidget(
-    expr           = bquote(htmlwidgets::createWidget(
-                       name = "welcome", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = antDesignXWelcomeOutput, env = baseenv(), quoted = TRUE)
-}
+renderAntDesignXWelcome <- .make_render_widget("welcome", antDesignXWelcomeOutput)

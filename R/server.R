@@ -33,6 +33,9 @@
 #'   * `register_cancel` — `function(fn)` to register a cancel callback.
 #'
 #' @param show_conversation_list Logical. If `TRUE`, conversation list sidebar shown.
+#' @param xcard_mode `"inline"` (default) renders xCard inside message bubbles;
+#'   `"panel"` shows cards in a right-side panel.
+#' @param xcard_panel_width Width in pixels of the panel-mode card area. Default 360.
 #' @param suggestions List of starter suggestions. Each element: list with `prompt`
 #'   and optional `text`.
 #' @param commands List of slash-command definitions. Each: list with `name`,
@@ -323,5 +326,3 @@ antDesignXServer <- function(id, handler,
     }
   ))
 }
-
-`%||%` <- function(x, y) if (is.null(x)) y else x

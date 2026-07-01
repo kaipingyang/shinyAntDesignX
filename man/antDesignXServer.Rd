@@ -57,6 +57,11 @@ antDesignXServer(
 
 \item{show_conversation_list}{Logical. If `TRUE`, conversation list sidebar shown.}
 
+\item{xcard_mode}{`"inline"` (default) renders xCard inside message bubbles;
+`"panel"` shows cards in a right-side panel.}
+
+\item{xcard_panel_width}{Width in pixels of the panel-mode card area. Default 360.}
+
 \item{suggestions}{List of starter suggestions. Each element: list with `prompt`
 and optional `text`.}
 

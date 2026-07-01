@@ -7,8 +7,7 @@
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
 antDesignXActionsOutput <- function(outputId, width = "100%", height = "auto", ...) {
-  htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "actions",
-    width = width, height = height, package = "shinyAntDesignX", ...)
+  .widget_output_body("actions", outputId, width, height, ...)
 }
 
 #' Render Actions Widget
@@ -21,10 +20,4 @@ antDesignXActionsOutput <- function(outputId, width = "100%", height = "auto", .
 #'   * `variant` — `"borderless"` (default), `"filled"`, `"outlined"`.
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderAntDesignXActions <- function(expr, env = parent.frame(), quoted = FALSE) {
-  func <- shiny::exprToFunction(expr, env, quoted)
-  htmlwidgets::shinyRenderWidget(
-    expr           = bquote(htmlwidgets::createWidget(
-                       name = "actions", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = antDesignXActionsOutput, env = baseenv(), quoted = TRUE)
-}
+renderAntDesignXActions <- .make_render_widget("actions", antDesignXActionsOutput)

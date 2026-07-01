@@ -39,6 +39,8 @@
 #'
 #' @export
 ellmer_session_store <- function(db_path) {
+  .check_pkg("DBI",     "ellmer_session_store")
+  .check_pkg("RSQLite", "ellmer_session_store")
   dir.create(dirname(db_path), showWarnings = FALSE, recursive = TRUE)
   con <- DBI::dbConnect(RSQLite::SQLite(), db_path, synchronous = "normal")
   DBI::dbExecute(con, "PRAGMA journal_mode = WAL")

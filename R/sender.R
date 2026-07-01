@@ -8,8 +8,7 @@
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
 antDesignXSenderOutput <- function(outputId, width = "100%", height = "auto", ...) {
-  htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "sender",
-    width = width, height = height, package = "shinyAntDesignX", ...)
+  .widget_output_body("sender", outputId, width, height, ...)
 }
 
 #' Render Sender Widget
@@ -18,10 +17,4 @@ antDesignXSenderOutput <- function(outputId, width = "100%", height = "auto", ..
 #'   `allowSpeech` (logical), `submitType` (`"enter"` or `"shiftEnter"`).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderAntDesignXSender <- function(expr, env = parent.frame(), quoted = FALSE) {
-  func <- shiny::exprToFunction(expr, env, quoted)
-  htmlwidgets::shinyRenderWidget(
-    expr           = bquote(htmlwidgets::createWidget(
-                       name = "sender", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = antDesignXSenderOutput, env = baseenv(), quoted = TRUE)
-}
+renderAntDesignXSender <- .make_render_widget("sender", antDesignXSenderOutput)

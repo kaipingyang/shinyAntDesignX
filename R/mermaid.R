@@ -7,14 +7,7 @@
 #' @param ... Additional arguments passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
 antDesignXMermaidOutput <- function(outputId, width = "100%", height = "400px", ...) {
-  htmlwidgets::shinyWidgetOutput(
-    outputId = outputId,
-    name     = "mermaid",
-    width    = width,
-    height   = height,
-    package  = "shinyAntDesignX",
-    ...
-  )
+  .widget_output_body("mermaid", outputId, width, height, ...)
 }
 
 #' Render Mermaid Widget
@@ -26,13 +19,4 @@ antDesignXMermaidOutput <- function(outputId, width = "100%", height = "400px", 
 #'   * `enableCopy` — logical (default `TRUE`).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderAntDesignXMermaid <- function(expr, env = parent.frame(), quoted = FALSE) {
-  func <- shiny::exprToFunction(expr, env, quoted)
-  htmlwidgets::shinyRenderWidget(
-    expr           = bquote(htmlwidgets::createWidget(
-                       name = "mermaid", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = antDesignXMermaidOutput,
-    env            = baseenv(),
-    quoted         = TRUE
-  )
-}
+renderAntDesignXMermaid <- .make_render_widget("mermaid", antDesignXMermaidOutput)

@@ -21,6 +21,10 @@ Called once per thread on first message.}
 \item{approval_tools}{Character vector of tool names requiring human approval.}
 
 \item{store}{Optional session store from [ellmer_session_store()].}
+
+\item{on_tool_result}{Optional `function(tool_call_id, result, is_error, thread_id)`
+called after each tool result arrives. Use to trigger side effects such as
+updating an xCard surface with the tool output.}
 }
 \value{
 A `coro::async` handler function compatible with [antDesignXServer()].

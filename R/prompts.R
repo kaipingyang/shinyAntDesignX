@@ -7,8 +7,7 @@
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
 antDesignXPromptsOutput <- function(outputId, width = "100%", height = "auto", ...) {
-  htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "prompts",
-    width = width, height = height, package = "shinyAntDesignX", ...)
+  .widget_output_body("prompts", outputId, width, height, ...)
 }
 
 #' Render Prompts Widget
@@ -21,10 +20,4 @@ antDesignXPromptsOutput <- function(outputId, width = "100%", height = "auto", .
 #'   `disabled = TRUE` greys out and disables click for that item.
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderAntDesignXPrompts <- function(expr, env = parent.frame(), quoted = FALSE) {
-  func <- shiny::exprToFunction(expr, env, quoted)
-  htmlwidgets::shinyRenderWidget(
-    expr           = bquote(htmlwidgets::createWidget(
-                       name = "prompts", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = antDesignXPromptsOutput, env = baseenv(), quoted = TRUE)
-}
+renderAntDesignXPrompts <- .make_render_widget("prompts", antDesignXPromptsOutput)

@@ -8,8 +8,7 @@
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
 antDesignXConversationsOutput <- function(outputId, width = "100%", height = "100%", ...) {
-  htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "conversations",
-    width = width, height = height, package = "shinyAntDesignX", ...)
+  .widget_output_body("conversations", outputId, width, height, ...)
 }
 
 #' Render Conversations Widget
@@ -22,10 +21,4 @@ antDesignXConversationsOutput <- function(outputId, width = "100%", height = "10
 #'   * `showCreation` — logical, show "New Chat" button (default `FALSE`).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderAntDesignXConversations <- function(expr, env = parent.frame(), quoted = FALSE) {
-  func <- shiny::exprToFunction(expr, env, quoted)
-  htmlwidgets::shinyRenderWidget(
-    expr           = bquote(htmlwidgets::createWidget(
-                       name = "conversations", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = antDesignXConversationsOutput, env = baseenv(), quoted = TRUE)
-}
+renderAntDesignXConversations <- .make_render_widget("conversations", antDesignXConversationsOutput)

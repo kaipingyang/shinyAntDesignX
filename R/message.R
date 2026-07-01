@@ -16,8 +16,7 @@
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
 antDesignMessageOutput <- function(outputId, width = "0px", height = "0px", ...) {
-  htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "message",
-    width = width, height = height, package = "shinyAntDesignX", ...)
+  .widget_output_body("message", outputId, width, height, ...)
 }
 
 #' Render Message Widget
@@ -29,10 +28,4 @@ antDesignMessageOutput <- function(outputId, width = "0px", height = "0px", ...)
 #'   stacking), `ts` (optional; bump to re-fire identical content).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderAntDesignMessage <- function(expr, env = parent.frame(), quoted = FALSE) {
-  func <- shiny::exprToFunction(expr, env, quoted)
-  htmlwidgets::shinyRenderWidget(
-    expr           = bquote(htmlwidgets::createWidget(
-                       name = "message", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = antDesignMessageOutput, env = baseenv(), quoted = TRUE)
-}
+renderAntDesignMessage <- .make_render_widget("message", antDesignMessageOutput)

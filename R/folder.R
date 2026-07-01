@@ -8,8 +8,7 @@
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
 antDesignXFolderOutput <- function(outputId, width = "100%", height = "500px", ...) {
-  htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "folder",
-    width = width, height = height, package = "shinyAntDesignX", ...)
+  .widget_output_body("folder", outputId, width, height, ...)
 }
 
 #' Render Folder Widget
@@ -21,10 +20,4 @@ antDesignXFolderOutput <- function(outputId, width = "100%", height = "500px", .
 #'   * `defaultExpandAll` — logical (default `TRUE`).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderAntDesignXFolder <- function(expr, env = parent.frame(), quoted = FALSE) {
-  func <- shiny::exprToFunction(expr, env, quoted)
-  htmlwidgets::shinyRenderWidget(
-    expr           = bquote(htmlwidgets::createWidget(
-                       name = "folder", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = antDesignXFolderOutput, env = baseenv(), quoted = TRUE)
-}
+renderAntDesignXFolder <- .make_render_widget("folder", antDesignXFolderOutput)

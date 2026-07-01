@@ -7,8 +7,7 @@
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
 antDesignXSourcesOutput <- function(outputId, width = "100%", height = "auto", ...) {
-  htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "sources",
-    width = width, height = height, package = "shinyAntDesignX", ...)
+  .widget_output_body("sources", outputId, width, height, ...)
 }
 
 #' Render Sources Widget
@@ -21,10 +20,4 @@ antDesignXSourcesOutput <- function(outputId, width = "100%", height = "auto", .
 #'   * `inline` — logical, inline citation mode (default `FALSE`).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderAntDesignXSources <- function(expr, env = parent.frame(), quoted = FALSE) {
-  func <- shiny::exprToFunction(expr, env, quoted)
-  htmlwidgets::shinyRenderWidget(
-    expr           = bquote(htmlwidgets::createWidget(
-                       name = "sources", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = antDesignXSourcesOutput, env = baseenv(), quoted = TRUE)
-}
+renderAntDesignXSources <- .make_render_widget("sources", antDesignXSourcesOutput)

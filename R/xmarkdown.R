@@ -8,14 +8,7 @@
 #' @param ... Additional arguments passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
 antDesignXMarkdownOutput <- function(outputId, width = "100%", height = "auto", ...) {
-  htmlwidgets::shinyWidgetOutput(
-    outputId = outputId,
-    name     = "xmarkdown",
-    width    = width,
-    height   = height,
-    package  = "shinyAntDesignX",
-    ...
-  )
+  .widget_output_body("xmarkdown", outputId, width, height, ...)
 }
 
 #' Render XMarkdown Widget
@@ -67,13 +60,4 @@ antDesignXMarkdownOutput <- function(outputId, width = "100%", height = "auto", 
 #'     render time). Development use only.
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderAntDesignXMarkdown <- function(expr, env = parent.frame(), quoted = FALSE) {
-  func <- shiny::exprToFunction(expr, env, quoted)
-  htmlwidgets::shinyRenderWidget(
-    expr           = bquote(htmlwidgets::createWidget(
-                       name = "xmarkdown", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = antDesignXMarkdownOutput,
-    env            = baseenv(),
-    quoted         = TRUE
-  )
-}
+renderAntDesignXMarkdown <- .make_render_widget("xmarkdown", antDesignXMarkdownOutput)

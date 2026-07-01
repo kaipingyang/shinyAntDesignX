@@ -14,8 +14,7 @@
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
 antDesignXNotificationOutput <- function(outputId, width = "0px", height = "0px", ...) {
-  htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "notification",
-    width = width, height = height, package = "shinyAntDesignX", ...)
+  .widget_output_body("notification", outputId, width, height, ...)
 }
 
 #' Render Notification Widget
@@ -27,10 +26,4 @@ antDesignXNotificationOutput <- function(outputId, width = "0px", height = "0px"
 #'   `inputId` optional — if set, clicking notification emits to Shiny.
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderAntDesignXNotification <- function(expr, env = parent.frame(), quoted = FALSE) {
-  func <- shiny::exprToFunction(expr, env, quoted)
-  htmlwidgets::shinyRenderWidget(
-    expr           = bquote(htmlwidgets::createWidget(
-                       name = "notification", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = antDesignXNotificationOutput, env = baseenv(), quoted = TRUE)
-}
+renderAntDesignXNotification <- .make_render_widget("notification", antDesignXNotificationOutput)

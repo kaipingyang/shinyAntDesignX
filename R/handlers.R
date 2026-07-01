@@ -1,5 +1,3 @@
-`%||%` <- function(x, y) if (is.null(x)) y else x
-
 # ── ellmer turns → ThreadMessageLike（内部辅助）──────────────────────────────
 
 .ellmer_turns_to_messages <- function(turns) {
@@ -43,6 +41,9 @@
 #' @param tools A list of `ellmer::tool()` objects to register on each chat.
 #' @param approval_tools Character vector of tool names requiring human approval.
 #' @param store Optional session store from [ellmer_session_store()].
+#' @param on_tool_result Optional `function(tool_call_id, result, is_error, thread_id)`
+#'   called after each tool result arrives. Use to trigger side effects such as
+#'   updating an xCard surface with the tool output.
 #'
 #' @return A `coro::async` handler function compatible with [antDesignXServer()].
 #' @export
@@ -51,6 +52,9 @@ make_ellmer_handler <- function(chat,
                                 approval_tools = character(0),
                                 store          = NULL,
                                 on_tool_result = NULL) {
+  .check_pkg("ellmer",    "make_ellmer_handler")
+  .check_pkg("coro",      "make_ellmer_handler")
+  .check_pkg("base64enc", "make_ellmer_handler")
   chats <- list()
 
   get_chat_obj <- function(thread_id) {
@@ -205,6 +209,8 @@ make_ellmer_handler <- function(chat,
 #' @return A function with signature `function(session_id, thread_id, send_thread)`.
 #' @export
 make_ellmer_session_loader <- function(store) {
+  .check_pkg("ellmer",    "make_ellmer_session_loader")
+  .check_pkg("base64enc", "make_ellmer_session_loader")
   function(session_id, thread_id, send_thread) {
     saved <- tryCatch(store$load(thread_id), error = function(e) NULL)
     if (is.null(saved)) { send_thread(list()); return() }
@@ -240,6 +246,8 @@ make_ellmer_session_loader <- function(store) {
 #' @export
 make_claude_handler <- function(options          = NULL,
                                 session_map_path = ".claude_session_map.rds") {
+  .check_pkg("ClaudeAgentSDK", "make_claude_handler")
+  .check_pkg("coro",           "make_claude_handler")
   if (is.null(options)) {
     options <- ClaudeAgentSDK::ClaudeAgentOptions(
       permission_mode             = "default",
@@ -521,6 +529,7 @@ list_claude_sessions <- function(directory = here::here(), limit = 100L) {
 #' @return A function with signature `function(session_id, thread_id, send_thread)`.
 #' @export
 make_claude_session_loader <- function(session_map_path = ".claude_session_map.rds") {
+  .check_pkg("ClaudeAgentSDK", "make_claude_session_loader")
   session_map <- if (file.exists(session_map_path))
     tryCatch(readRDS(session_map_path), error = function(e) list())
   else list()
