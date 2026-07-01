@@ -57,12 +57,11 @@ export class ShinyBridgeRequest extends AbstractXRequestClass<ShinyInput, ShinyC
     const threadId = params?.threadId ?? "";
     this._currentThreadId = threadId;
 
-    // ARCHITECTURAL CONSTRAINT: bridge holds a single callback slot (currentCallbacks).
-    // Correctness depends on at most one run() being active at a time — enforced by
-    // useXChat's isRequesting guard and queueRequest. If R fails to send done/error
-    // (e.g. handler crash), _isRequesting locks and only abort() can recover.
-    // threadId filtering below is a secondary defence, not the primary lock.
-    this.bridge.setRunCallbacks({
+    // ARCHITECTURAL CONSTRAINT: bridge per-threadId bucketed callbacks.
+    // Concurrent requests to different threads are supported. useXChat's isRequesting
+    // guard still prevents two concurrent requests on the SAME thread.
+    // threadId filtering in each callback is now the primary routing mechanism.
+    this.bridge.setRunCallbacks(threadId, {
       onChunk: (text, msgThreadId) => {
         if (msgThreadId && msgThreadId !== threadId) return;
         this.options.callbacks?.onUpdate?.(
@@ -99,14 +98,14 @@ export class ShinyBridgeRequest extends AbstractXRequestClass<ShinyInput, ShinyC
       onDone: (msgThreadId) => {
         if (msgThreadId && msgThreadId !== threadId) return;
         this._isRequesting = false;
-        this.bridge.setRunCallbacks(null);
+        this.bridge.setRunCallbacks(threadId, null);
         // onSuccess signals useXChat that the stream completed
         this.options.callbacks?.onSuccess?.([], new Headers());
       },
       onError: (message, msgThreadId) => {
         if (msgThreadId && msgThreadId !== threadId) return;
         this._isRequesting = false;
-        this.bridge.setRunCallbacks(null);
+        this.bridge.setRunCallbacks(threadId, null);
         this.options.callbacks?.onError?.(new Error(message));
       },
     });
@@ -120,7 +119,7 @@ export class ShinyBridgeRequest extends AbstractXRequestClass<ShinyInput, ShinyC
 
   abort(): void {
     this._isRequesting = false;
-    this.bridge.setRunCallbacks(null);
+    this.bridge.setRunCallbacks(this._currentThreadId, null);
     this.bridge.sendCancel(this._currentThreadId);
   }
 }

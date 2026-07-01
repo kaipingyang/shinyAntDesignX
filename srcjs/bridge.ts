@@ -46,7 +46,7 @@ export interface ShinyBridge {
   sendLoadSession: (sessionId: string, threadId: string) => void;
   sendFeedback: (messageId: string, type: "positive" | "negative") => void;
   sendReady: () => void;
-  setRunCallbacks: (callbacks: RunCallbacks | null) => void;
+  setRunCallbacks: (threadId: string, callbacks: RunCallbacks | null) => void;
   onClear: (handler: () => void) => void;
   onSessions: (handler: (data: { sessions: SessionItem[] }) => void) => void;
   onLoadThread: (handler: (data: { threadId: string; messages: unknown[] }) => void) => void;
@@ -55,7 +55,9 @@ export interface ShinyBridge {
 }
 
 export function createShinyBridge(inputId: string): ShinyBridge {
-  let currentCallbacks: RunCallbacks | null = null;
+  // Per-threadId callback buckets — supports concurrent streams (e.g. two tabs)
+  // and prevents a late-arriving chunk from a stale thread overwriting a new one.
+  const callbackMap = new Map<string, RunCallbacks>();
   let sessionsHandler: ((data: { sessions: SessionItem[] }) => void) | null = null;
   let loadThreadHandler: ((data: { threadId: string; messages: unknown[] }) => void) | null = null;
   let cardCommandHandler: ((data: { command: Record<string, unknown>; threadId: string }) => void) | null = null;
@@ -68,33 +70,33 @@ export function createShinyBridge(inputId: string): ShinyBridge {
   // 注册一次，内部路由到当前运行的回调
   Shiny.addCustomMessageHandler(`${inputId}:chunk`, (data) => {
     const d = data as { text: string; threadId?: string };
-    currentCallbacks?.onChunk(d.text, d.threadId);
+    callbackMap.get(d.threadId ?? "")?.onChunk(d.text, d.threadId);
   });
 
   Shiny.addCustomMessageHandler(`${inputId}:done`, (_data) => {
     const d = _data as { threadId?: string };
-    currentCallbacks?.onDone(d?.threadId);
+    callbackMap.get(d?.threadId ?? "")?.onDone(d?.threadId);
   });
 
   Shiny.addCustomMessageHandler(`${inputId}:error`, (data) => {
     const d = data as { message: string; threadId?: string };
-    currentCallbacks?.onError(d.message, d.threadId);
+    callbackMap.get(d.threadId ?? "")?.onError(d.message, d.threadId);
   });
 
   Shiny.addCustomMessageHandler(`${inputId}:thinking`, (data) => {
     const d = data as { text: string; threadId?: string };
-    currentCallbacks?.onThinking?.(d.text, d.threadId);
+    callbackMap.get(d.threadId ?? "")?.onThinking?.(d.text, d.threadId);
   });
 
   Shiny.addCustomMessageHandler(`${inputId}:tool-call`, (data) => {
     const d = data as ToolCallPayload & { threadId?: string };
     const { threadId, ...payload } = d;
-    currentCallbacks?.onToolCall(payload as ToolCallPayload, threadId);
+    callbackMap.get(threadId ?? "")?.onToolCall(payload as ToolCallPayload, threadId);
   });
 
   Shiny.addCustomMessageHandler(`${inputId}:tool-result`, (data) => {
     const d = data as { toolCallId: string; result: unknown; isError?: boolean; threadId?: string };
-    currentCallbacks?.onToolResult(d.toolCallId, d.result, d.isError ?? false, d.threadId);
+    callbackMap.get(d.threadId ?? "")?.onToolResult(d.toolCallId, d.result, d.isError ?? false, d.threadId);
   });
 
   Shiny.addCustomMessageHandler(`${inputId}:sessions`, (data) => {
@@ -189,8 +191,12 @@ export function createShinyBridge(inputId: string): ShinyBridge {
       );
     },
 
-    setRunCallbacks(callbacks) {
-      currentCallbacks = callbacks;
+    setRunCallbacks(threadId, callbacks) {
+      if (callbacks === null) {
+        callbackMap.delete(threadId);
+      } else {
+        callbackMap.set(threadId, callbacks);
+      }
     },
 
     onSessions(handler) {

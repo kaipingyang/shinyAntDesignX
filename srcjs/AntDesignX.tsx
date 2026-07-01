@@ -85,7 +85,14 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
     requestFallback: (_, { error, messageInfo }) => {
       if (error.name === "AbortError") {
         const prev = (messageInfo as MessageInfo<ShinyMessage> | undefined)?.message;
-        return { role: "assistant", textContent: prev?.textContent ?? "", toolCalls: prev?.toolCalls ?? [] };
+        // Preserve whatever was streamed before abort — user sees partial response on switch-back
+        return {
+          role: "assistant",
+          textContent: prev?.textContent ?? "",
+          reasoningContent: prev?.reasoningContent,
+          toolCalls: prev?.toolCalls ?? [],
+          cardSurfaceIds: prev?.cardSurfaceIds,
+        };
       }
       return { role: "assistant", textContent: `⚠ Error: ${error.message}`, toolCalls: [] };
     },
@@ -310,20 +317,19 @@ export default function AntDesignX({ inputId, config }: AntDesignXProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── conversation switch: lazy-load server sessions ────────────────────────
-  // NOTE: switching threads does NOT abort an in-flight request. Chunks for the
-  // previous thread are filtered by threadId in ShinyBridgeRequest and silently
-  // dropped — they are NOT buffered. If the user switches away mid-stream and
-  // switches back, the dropped increments will be missing from the message history.
-  // This is an accepted product trade-off (resource layer: design choice;
-  // message-continuity layer: known gap). To change behaviour, call abort() here
-  // before setActiveConversationKey.
+  // When switching threads mid-stream, abort the current request so R doesn't
+  // keep sending chunks for a thread the user is no longer watching.
+  // Aborted chunks are not buffered — if the user switches back before done,
+  // the message will show whatever was accumulated up to the abort point
+  // (requestFallback preserves partial textContent on AbortError).
   const handleConversationChange = useCallback((key: string) => {
+    if (isRequesting) abort();
     setActiveConversationKey(key);
     if (unloadedSessionIds.current.has(key)) {
       bridge.sendLoadSession(key, key);
       unloadedSessionIds.current.delete(key);
     }
-  }, [bridge, setActiveConversationKey]);
+  }, [bridge, setActiveConversationKey, isRequesting, abort]);
 
   // ── sender state ──────────────────────────────────────────────────────────
   const [inputValue, setInputValue] = useState("");
