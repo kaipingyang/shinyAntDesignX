@@ -24,7 +24,7 @@ ui <- page_fillable(
         actionButton("m_loading", "loading", class = "btn-secondary"),
         actionButton("m_update",  "key 更新（loading→success）", class = "btn-primary")
       ),
-      antDesignXMessageOutput("msg")
+      antDesignMessageOutput("msg")
     ),
 
     card(
@@ -35,7 +35,7 @@ ui <- page_fillable(
         actionButton("n_err", "error 卡片", class = "btn-danger"),
         actionButton("n_persist", "持久(duration=0)", class = "btn-warning")
       ),
-      antDesignXNotifyOutput("ntf"),
+      antDesignNotifyOutput("ntf"),
       hr(),
       h6("notify 点击/关闭事件："),
       verbatimTextOutput("ntf_evt")
@@ -63,7 +63,7 @@ server <- function(input, output, session) {
     }, delay = 2)
   })
 
-  output$msg <- renderAntDesignXMessage({ req(msg()); msg() })
+  output$msg <- renderAntDesignMessage({ req(msg()); msg() })
   outputOptions(output, "msg", suspendWhenHidden = FALSE)
 
   # ── notify 触发 ──
@@ -80,7 +80,7 @@ server <- function(input, output, session) {
     type = "warning", message = "持久通知", description = "duration = 0，不自动关闭，需手动 X。",
     placement = "topRight", duration = 0, inputId = "ntf", ts = Sys.time())))
 
-  output$ntf <- renderAntDesignXNotify({ req(ntf()); ntf() })
+  output$ntf <- renderAntDesignNotify({ req(ntf()); ntf() })
   outputOptions(output, "ntf", suspendWhenHidden = FALSE)
 
   output$ntf_evt <- renderPrint({ req(input$ntf); input$ntf })

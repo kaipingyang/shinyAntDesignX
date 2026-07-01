@@ -18,7 +18,7 @@
 #' @param width,height CSS dimensions (default height 0px).
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
-antDesignXNotifyOutput <- function(outputId, width = "0px", height = "0px", ...) {
+antDesignNotifyOutput <- function(outputId, width = "0px", height = "0px", ...) {
   htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "notify",
     width = width, height = height, package = "shinyAntDesignX", ...)
 }
@@ -34,10 +34,10 @@ antDesignXNotifyOutput <- function(outputId, width = "0px", height = "0px", ...)
 #'   `ts` (optional; bump to re-fire), `inputId` (optional — click/close emit to Shiny).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderAntDesignXNotify <- function(expr, env = parent.frame(), quoted = FALSE) {
+renderAntDesignNotify <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
   htmlwidgets::shinyRenderWidget(
     expr           = bquote(htmlwidgets::createWidget(
                        name = "notify", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = antDesignXNotifyOutput, env = baseenv(), quoted = TRUE)
+    outputFunction = antDesignNotifyOutput, env = baseenv(), quoted = TRUE)
 }

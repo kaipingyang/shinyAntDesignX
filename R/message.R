@@ -15,7 +15,7 @@
 #' @param width,height CSS dimensions (default height 0px).
 #' @param ... Passed to [htmlwidgets::shinyWidgetOutput()].
 #' @export
-antDesignXMessageOutput <- function(outputId, width = "0px", height = "0px", ...) {
+antDesignMessageOutput <- function(outputId, width = "0px", height = "0px", ...) {
   htmlwidgets::shinyWidgetOutput(outputId = outputId, name = "message",
     width = width, height = height, package = "shinyAntDesignX", ...)
 }
@@ -29,10 +29,10 @@ antDesignXMessageOutput <- function(outputId, width = "0px", height = "0px", ...
 #'   stacking), `ts` (optional; bump to re-fire identical content).
 #' @param env,quoted Passed to [shiny::exprToFunction()].
 #' @export
-renderAntDesignXMessage <- function(expr, env = parent.frame(), quoted = FALSE) {
+renderAntDesignMessage <- function(expr, env = parent.frame(), quoted = FALSE) {
   func <- shiny::exprToFunction(expr, env, quoted)
   htmlwidgets::shinyRenderWidget(
     expr           = bquote(htmlwidgets::createWidget(
                        name = "message", x = .(func)(), package = "shinyAntDesignX")),
-    outputFunction = antDesignXMessageOutput, env = baseenv(), quoted = TRUE)
+    outputFunction = antDesignMessageOutput, env = baseenv(), quoted = TRUE)
 }
